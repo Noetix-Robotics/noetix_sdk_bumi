@@ -70,10 +70,7 @@ bool LowController::init(ControlMode mode) {
         lieJointAngles_.resize(actuatedDofNum_);
         standJointAngles_.resize(actuatedDofNum_);
         currentJointAngles_.resize(actuatedDofNum_);
-        // lieJointAngles_ 全0 — 与 RLControllerBase.h 中的 liejointState_ 一致
         lieJointAngles_.setZero();
-        // standJointAngles_ 按 jointNames 顺序赋值 — 与 RLControllerBase.h 中的
-        // standjointState_ 一致 jointNames: leg_l1, leg_r1, waist_1, leg_l2,
         // leg_r2, arm_l1, arm_r1,
         //             leg_l3, leg_r3, arm_l2, arm_r2, leg_l4, leg_r4, arm_l3,
         //             arm_r3, leg_l5, leg_r5, arm_l4, arm_r4, leg_l6, leg_r6
@@ -314,7 +311,6 @@ void LowController::setparameter(Command &cmd, bool *isfirst) {
 }
 
 bool LowController::updateStateEstimation() {
-        // 与 RLControllerBase::updateStateEstimation 对齐
         // propri_.jointPos/jointVel 按 jointNames 顺序（0-20）存储
         // 通过 getJointsIndex 从硬件电机数组中读取对应数据
         vector_t jointPos(actuatedDofNum_), jointVel(actuatedDofNum_);
@@ -395,7 +391,6 @@ bool LowController::updateStateEstimation() {
 }
 
 void LowController::handleDefautMode() {
-        // 与 RLControllerBase::handleDefautMode 对齐
         // setCommand(0, 0, 0, 0.1, 0) => pos=0, vel=0, kp=0, kd=0.1, tau=0
         std::array<MotorCmd, 21> motorcmd;
         for (int j = 0; j < actuatedDofNum_; j++) {
@@ -413,7 +408,6 @@ void LowController::handleDefautMode() {
 }
 
 void LowController::handleStandMode() {
-        // 与 RLControllerBase::handleStandMode 对齐
         // pos_des = lieJointAngles_[j] * (1 - percent) + standJointAngles_[j] *
         // percent setCommand(pos_des, 0, 10, 0.5, 0)
         std::array<MotorCmd, 21> motorcmd;
@@ -439,7 +433,6 @@ void LowController::handleStandMode() {
 }
 
 void LowController::handleLieMode() {
-        // 与 RLControllerBase::handleLieMode 对齐
         // pos_des = currentJointAngles_[j] * (1 - percent) + lieJointAngles_[j]
         // * percent setCommand(pos_des, 0, 10, 0.5, 0)
         std::array<MotorCmd, 21> motorcmd;
@@ -465,11 +458,10 @@ void LowController::handleLieMode() {
 }
 
 bool LowController::handleUserMode() {
-        // 与 AcController::handleWalkMode 对齐
         if (updateStateEstimation() == false)
                 return false;
 
-        // 摔倒保护 — 与 AcController 一致
+        // 摔倒保护
         if (propri_.projectedGravity(2) >= -0.3) {
                 printf("Fall Protection Triggered (UserMode)!\n");
                 mode_ = WorkMode::DEFAULT;
@@ -491,7 +483,6 @@ bool LowController::handleUserMode() {
                     });
         }
 
-        // set action — 与 AcController::handleWalkMode 一致
         // 直接遍历 actionsSize_，用 joint_names[i] 通过 getJointsIndex
         // 映射到硬件
         std::array<MotorCmd, 21> motorcmd;
@@ -919,7 +910,6 @@ bool LowController::getmodelparam() {
 }
 
 void LowController::computeObservation() {
-        // 与 AcController::computeObservation 对齐
         vector_t command(3);
 
         // 绝对值小于0.3的都置0
@@ -927,7 +917,7 @@ void LowController::computeObservation() {
         double cmd_y = command_[1] * scaley;
         double cmd_z = command_[2] * scalez;
 
-        if (cmd_x < 0.3)
+        if (abs(cmd_x) < 0.3)
                 cmd_x = 0.0;
         if (abs(cmd_z) < 0.3)
                 cmd_z = 0.0;
@@ -950,7 +940,6 @@ void LowController::computeObservation() {
         vector_t actions(lastActions_);
 
         // propri_.jointPos/jointVel 已按 jointNames 顺序存储
-        // 直接使用，与 AcController::computeObservation 一致
         vector_t proprioObs(observationSize_);
 
         proprioObs << command,                        // 3
