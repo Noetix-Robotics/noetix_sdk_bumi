@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CycloneDDS>
+    <!-- 指定网卡（示例：使用eth0，请替换为实际网卡名） -->
+     <Domain id="any">
+        <General>
+            <NetworkInterfaceAddress>127.0.0.1</NetworkInterfaceAddress>
+            <Transport>udp</Transport>
+            <AllowMulticast>false</AllowMulticast>
+        </General>
+        <Discovery>
+            <ParticipantIndex>1</ParticipantIndex>
+            <Peers>
+                <Peer address="127.0.0.1"/>
+            </Peers>
+            <SPDPInterval>50</SPDPInterval>
+        </Discovery>
+        <!-- 启用共享内存优化（本机通信）
+        <SharedMemory>
+            <Enable>true</Enable>
+        </SharedMemory> -->
+
+        <!-- 调优内部缓冲区 
+        <Internal>
+            <SocketBufferSize>65536</SocketBufferSize>
+            <ReceiveBufferSize>65536</ReceiveBufferSize>
+        </Internal>-->
+
+        <!-- 针对机器人控制的传输优化 
+        <Tracing>
+            <Verbosity>WARNING</Verbosity>
+            <OutputFile>/tmp/cyclonedds_trace.log</OutputFile>
+        </Tracing>-->
+    </Domain>
+
+    <!-- 为特定Topic配置QoS（示例） 
+    <Topic name="Motor_Cmd_Topic">
+        <Reliability>RELIABLE</Reliability>
+        <Deadline>20ms</Deadline>
+        <History>
+            <Kind>KEEP_LAST</Kind>
+            <Depth>10</Depth>
+        </History>
+    </Topic>-->
+</CycloneDDS>
