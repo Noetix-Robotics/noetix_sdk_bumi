@@ -134,7 +134,6 @@ class HighController {
         void set_axes(double ver, double hor, int action, uint16_t index);
         const joydata get_jsdata();
         const NingImuData get_imu_data();
-        void send_thread_func();
         void process_thread_func();
         void set_imudata(NingImuData imu_data);
         void set_joydata(joydata joy_data);
@@ -186,7 +185,6 @@ class HighController {
         // DataBuffer<joydata> joy_buffer_;
         // DataBuffer<NingImuData> imu_buffer_;
 
-        std::thread send_thread_;
         std::thread process_thread_;
 };
 } // namespace legged

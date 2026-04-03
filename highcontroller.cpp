@@ -96,15 +96,10 @@ bool HighController::init(ControlMode mode) {
                     HighController::Instance()->set_robotstatusdata(
                         data, imudata, remote_data);
             });
-        send_thread_ = std::thread(&HighController::send_thread_func, this);
         process_thread_ =
             std::thread(&HighController::process_thread_func, this);
         sched_param ddssched{.sched_priority = 98};
         if (pthread_setschedparam(process_thread_.native_handle(), SCHED_FIFO,
-                                  &ddssched) != 0) {
-                printf(" failed to set threads priority\n");
-        }
-        if (pthread_setschedparam(send_thread_.native_handle(), SCHED_FIFO,
                                   &ddssched) != 0) {
                 printf(" failed to set threads priority\n");
         }
@@ -125,39 +120,6 @@ void HighController::set_robotstatusdata(std::array<MotorState, 21> data,
         joy_buffer_.SetData(joy_data);
 }
 
-void HighController::send_thread_func() {
-        while (1) {
-                const std::shared_ptr<const RobotMotorCmd::MotorCmdArray> mc =
-                    motor_cmd_buffer_.GetData();
-                if (mc) {
-                        RobotMotorCmd::MotorCmdArray cmdarray;
-                        cmdarray.motorcmds().resize(21);
-                        for (int i = 0; i < 21; i++) {
-                                auto &cmd = cmdarray.motorcmds()[i];
-                                cmd.pos() = mc->motorcmds().at(i).pos();
-                                cmd.vel() = mc->motorcmds().at(i).vel();
-                                cmd.tau() = mc->motorcmds().at(i).tau();
-                                cmd.kp() = mc->motorcmds().at(i).kp();
-                                cmd.kd() = mc->motorcmds().at(i).kd();
-                                cmd.motor_id() =
-                                    mc->motorcmds().at(i).motor_id();
-                                std::cout
-                                    << "motorstate  id: " << cmd.motor_id()
-                                    << ";pos " << cmd.pos() << ";vel "
-                                    << cmd.vel() << ";tau " << cmd.tau()
-                                    << std::endl;
-                        }
-                        auto now = Clock::now();
-                        long long timestamp = std::chrono::duration_cast<
-                                                  std::chrono::microseconds>(
-                                                  now.time_since_epoch())
-                                                  .count();
-                        cmdarray.timestamp() = timestamp;
-                        ddswrapper.publishMotorCmdData(cmdarray);
-                }
-                std::this_thread::sleep_for(std::chrono::microseconds(2000));
-        }
-}
 void HighController::process_thread_func() {
         while (1) {
                 auto start_time = std::chrono::steady_clock::now();
