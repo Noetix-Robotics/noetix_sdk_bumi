@@ -2,7 +2,6 @@
 #include <Robot_status.hpp>
 #include <chrono>
 #include <common.h>
-#include <iostream>
 #include <stdio.h>
 #include <thread>
 #include <unistd.h>
