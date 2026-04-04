@@ -3,21 +3,14 @@
 
 #include "DDSWrapper.h"
 #include "common.h"
-#include <atomic>
-#include <chrono>
 #include <eigen3/Eigen/Dense>
-
 #include <cmath>
-#include <iostream>
 #include <memory>
 #include <mutex>
 #include <queue>
 #include <shared_mutex>
 #include <thread>
 
-//#ifdef RK3588
-//#include "rknn_api.h"
-//#endif
 using namespace org::eclipse::cyclonedds;
 #define Key1 1   // 上扳机键
 #define Key2 2   // 下扳机键
