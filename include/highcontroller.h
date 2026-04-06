@@ -115,69 +115,19 @@ class HighController {
         }
         static HighController *instance; // 静态指针，用于调用非静态方法
 
-        bool init(ControlMode mode);
+        bool init();
 
         void process();
 
       protected:
-        void onnxdatainit();
-        bool getmodelparam();
-        bool updateStateEstimation();
         const std::array<MotorState, 21> get_joint_state();
-        void set_axes(double ver, double hor, int action, uint16_t index);
-        const joydata get_jsdata();
         const NingImuData get_imu_data();
         void process_thread_func();
-        void set_imudata(NingImuData imu_data);
-        void set_joydata(joydata joy_data);
         void set_robotstatusdata(std::array<MotorState, 21> motorstate_data,
                                  NingImuData imudata, joydata joy_data);
 
       private:
-        int64_t count;
-
         DDSWrapper ddswrapper;
-        vector3_t baseLinVel_;
-        vector3_t basePosition_;
-        vector_t lastActions_;
-        vector_t defaultJointAngles_;
-        vector_t walkdefaultJointAngles_;
-        int actuatedDofNum_;
-        bool *isfirstRecObs_;
-        int actionsSize_;
-        int motionSize;
-        int observationSize_;
-        int stackSize_;
-        float scalez;
-        float scalex;
-        float scaley;
-        // RemoteDriver remotedriver;
-
-        vector_t command_;
-
-        int64_t loopcount_;
-        NingImuData imu_data_;
-        joydata remote_data_;
-
-        // NingImuData imu_data;
-        std::array<MotorState, 21> motorstate_;
-        std::queue<std::array<MotorState, 21>> statequeue;
-        std::queue<RobotMotorCmd::MotorCmdArray> cmdqueue;
-
-        WorkMode mode_;
-        bool isChangeMode_ = false;
-        bool startcontrol = false;
-        int initfinish = 0;
-        int model_type;
-        long long statetimestamp;
-        std::mutex state_mutex;
-        std::array<MotorCmd, 21> usermotorcmd;
-
-        // DataBuffer<RobotMotorCmd::MotorCmdArray> motor_cmd_buffer_;
-        // DataBuffer<std::array<MotorState,21>> motor_state_buffer_;
-        // DataBuffer<joydata> joy_buffer_;
-        // DataBuffer<NingImuData> imu_buffer_;
-
         std::thread process_thread_;
 };
 } // namespace legged

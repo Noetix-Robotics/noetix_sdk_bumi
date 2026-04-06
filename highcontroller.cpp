@@ -16,20 +16,17 @@ DataBuffer<NingImuData> imu_buffer_;
 
 HighController *HighController::instance = nullptr;
 int readflag = 0;
-bool HighController::init(ControlMode mode) {
+bool HighController::init() {
         char buf[256];
         getcwd(buf, sizeof(buf));
         std::string path = std::string(buf);
         printf("cur path is %s\n", path.c_str());
 
-        mode_ = WorkMode::DEFAULT;
-
         instance = this;
 
         RobotSetMode::SetMode cmode;
-        if (mode == ControlMode::HIGHMODE) {
-                cmode.mode(1);
-        }
+
+        cmode.mode(1);
         ddswrapper.publishModeData(cmode);
         ddswrapper.subscribeRobotStatus(
             [](const RobotStatus::StatusData &ddsdata) {
@@ -106,10 +103,6 @@ bool HighController::init(ControlMode mode) {
         return true;
 }
 
-void HighController::set_joydata(joydata data) {
-        memcpy(remote_data_.button, &data.button, sizeof(data.button));
-        memcpy(remote_data_.axes, &data.axes, sizeof(data.axes));
-}
 
 void HighController::set_robotstatusdata(std::array<MotorState, 21> data,
                                          NingImuData imudata,
@@ -153,29 +146,7 @@ const NingImuData HighController::get_imu_data() {
 	return imudata;
 }
 
-const joydata HighController::get_jsdata() { return remote_data_; }
 
-void HighController::set_axes(double ver, double hor, int action,
-                              uint16_t index) {
-
-        RobotControlCmd::ControlCmd controlcmd;
-
-        auto now = Clock::now();
-        long long timestamp =
-            std::chrono::duration_cast<std::chrono::microseconds>(
-                now.time_since_epoch())
-                .count();
-        int diff = timestamp - statetimestamp;
-
-        controlcmd.axes()[0] = hor;
-        controlcmd.axes()[1] = ver;
-        controlcmd.action() = action;
-        if (action == 9 || action == 11) {
-                controlcmd.data() = index;
-        }
-
-        control_cmd_buffer_.SetData(controlcmd);
-}
 const std::array<MotorState, 21> HighController::get_joint_state() {
         std::array<MotorState, 21> motorstate;
         const std::shared_ptr<const std::array<MotorState, 21>> ms =
@@ -322,7 +293,7 @@ int main() {
         setenv("CYCLONEDDS_URI", ddsxml.c_str(), 1);
         printf("cur path is %s\n", path.c_str());
         legged::HighController highcontroller;
-        highcontroller.init(legged::ControlMode::HIGHMODE);
+        highcontroller.init();
 
         while (1) {
                 usleep(10);
