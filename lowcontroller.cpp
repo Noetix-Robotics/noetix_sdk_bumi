@@ -43,7 +43,6 @@ std::vector<double> SplitString2Double(const std::string &str, char delimiter) {
 // JoystickFilter filter;
 DataBuffer<std::array<MotorCmd, 21>> motor_cmd_buffer_;
 DataBuffer<std::array<MotorState, 21>> motor_state_buffer_;
-DataBuffer<RobotControlCmd::ControlCmd> control_cmd_buffer_;
 DataBuffer<joydata> joy_buffer_;
 DataBuffer<NingImuData> imu_buffer_;
 AoLionDriver aoliondriver;

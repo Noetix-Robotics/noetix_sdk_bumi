@@ -8,14 +8,11 @@
 using namespace org::eclipse::cyclonedds;
 
 namespace legged {
-DataBuffer<RobotMotorCmd::MotorCmdArray> motor_cmd_buffer_;
 DataBuffer<std::array<MotorState, 21>> motor_state_buffer_;
-DataBuffer<RobotControlCmd::ControlCmd> control_cmd_buffer_;
 DataBuffer<joydata> joy_buffer_;
 DataBuffer<NingImuData> imu_buffer_;
 
 HighController *HighController::instance = nullptr;
-int readflag = 0;
 bool HighController::init() {
         char buf[256];
         getcwd(buf, sizeof(buf));
