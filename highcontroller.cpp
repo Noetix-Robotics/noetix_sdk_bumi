@@ -133,11 +133,24 @@ void HighController::process_thread_func() {
 }
 
 const NingImuData HighController::get_imu_data() {
-        auto ptr = imu_buffer_.GetData();
-        if (!ptr) {
-                return NingImuData();
+	NingImuData imudata;
+        const std::shared_ptr<const NingImuData> idata = imu_buffer_.GetData();
+        if (idata) {
+                for (int i = 0; i < 4; i++) {
+                        imudata.ori[i] = (*idata).ori[i];
+                }
+                for (int i = 0; i < 3; i++) {
+                        imudata.angular_vel[i] = (*idata).angular_vel[i];
+                        imudata.linear_acc[i] = (*idata).linear_acc[i];
+                }
+                for (int i = 0; i < 9; i++) {
+                        imudata.ori_cov[i] = (*idata).ori_cov[i];
+                        imudata.angular_vel_cov[i] =
+                            (*idata).angular_vel_cov[i];
+                        imudata.linear_acc_cov[i] = (*idata).linear_acc_cov[i];
+                }
         }
-        return *ptr;
+	return imudata;
 }
 
 const joydata HighController::get_jsdata() { return remote_data_; }
