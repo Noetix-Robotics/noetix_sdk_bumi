@@ -7,7 +7,6 @@
 #include <memory>
 #include <mutex>
 #include <onnxruntime/onnxruntime_cxx_api.h>
-#include <queue>
 #include <shared_mutex>
 #include <thread>
 
@@ -104,13 +103,6 @@ class LowController {
                 static LowController lowcontrol;
                 return &lowcontrol;
         }
-        static LowController *instance; // 静态指针，用于调用非静态方法
-
-        static void StaticCallback() {
-                if (instance) {
-                        instance->process(); // 通过实例指针调用成员函数
-                }
-        }
         bool init(ControlMode mode);
         bool loadModel(std::string modelpath);
         void setparameter(Command &cmd, bool *isfirst);
@@ -137,13 +129,6 @@ class LowController {
         void send_thread_func();
 
       private:
-        // std::vector<std::string> walkjointNames{
-        //     "leg_l1_joint", "leg_r1_joint", "waist_1_joint", "leg_l2_joint",
-        //     "leg_r2_joint", "leg_l3_joint", "leg_r3_joint",  "arm_l1_joint",
-        //     "arm_r1_joint", "leg_l4_joint", "leg_r4_joint",  "arm_l2_joint",
-        //     "arm_r2_joint", "leg_l5_joint", "leg_r5_joint",  "arm_l3_joint",
-        //     "arm_r3_joint", "leg_l6_joint", "leg_r6_joint",  "arm_l4_joint",
-        //     "arm_r4_joint"};
         std::vector<std::string> jointNames{
             "leg_l1_joint", "leg_r1_joint", "waist_1_joint", "leg_l2_joint",
             "leg_r2_joint", "arm_l1_joint", "arm_r1_joint",  "leg_l3_joint",
@@ -153,7 +138,6 @@ class LowController {
             "leg_r6_joint"};
 
         DDSWrapper ddswrapper;
-        std::string policyFilePath_;
         std::string modelname;
         int64_t count;
         RobotCfg robotconfig;
@@ -163,27 +147,18 @@ class LowController {
         std::unique_ptr<Ort::Session> estSessionPtr;
         std::vector<const char *> policyInputNames_;
         std::vector<const char *> policyOutputNames_;
-        std::vector<const char *> estInputNames_;
-        std::vector<const char *> estOutputNames_;
         std::vector<Ort::AllocatedStringPtr>
             policyInputNodeNameAllocatedStrings;
         std::vector<Ort::AllocatedStringPtr>
             policyOutputNodeNameAllocatedStrings;
-        std::vector<Ort::AllocatedStringPtr> estInputNodeNameAllocatedStrings;
-        std::vector<Ort::AllocatedStringPtr> estOutputNodeNameAllocatedStrings;
         std::vector<std::vector<int64_t>> policyInputShapes_;
         std::vector<std::vector<int64_t>> policyOutputShapes_;
-        std::vector<std::vector<int64_t>> estInputShapes_;
-        std::vector<std::vector<int64_t>> estOutputShapes_;
-        vector3_t baseLinVel_;
-        vector3_t basePosition_;
         vector_t lastActions_;
         vector_t defaultJointAngles_;
         vector_t walkdefaultJointAngles_;
         int actuatedDofNum_;
         bool *isfirstRecObs_;
         int actionsSize_;
-        int motionSize;
         int observationSize_;
         int stackSize_;
         float scalez;
@@ -191,41 +166,20 @@ class LowController {
         float scaley;
         std::vector<tensor_element_t> actions_;
         std::vector<tensor_element_t> policyObservations_;
-        std::vector<tensor_element_t> estObservations_;
 
         Eigen::Matrix<tensor_element_t, Eigen::Dynamic, 1>
             proprioHistoryBuffer_;
         bool isfirstCompAct_{true};
         vector_t command_;
         Proprioception propri_;
-        double phase_;
-        int64_t loopcount_;
-        NingImuData imu_data_;
-        joydata remote_data_;
         joydata remote_data;
-        NingImuData imu_data;
-        std::array<MotorState, 21> motorstate_;
-        std::queue<std::array<MotorState, 21>> statequeue;
-        std::queue<RobotMotorCmd::MotorCmdArray> cmdqueue;
         double standPercent;
         scalar_t standDuration;
-        vector_t lieJointAngles;
-        JointState standjointState_{
-            0.0,     0.0,     0.0,     0.0, 0.0,    0.0,    0.0,
-            -0.1495, -0.1495, 0.0,     0.0, 0.3215, 0.3215, 0.0000,
-            0.0000,  -0.1720, -0.1720, 0.0, 0.0,    0.0,    0.0};
 
-        JointState liejointState_{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
         WorkMode mode_;
         bool isChangeMode_ = false;
         bool startcontrol = false;
         int initfinish = 0;
-        int model_type;
-        long long statetimestamp;
-        std::mutex state_mutex;
-        std::array<MotorCmd, 21> usermotorcmd;
 
         vector_t lieJointAngles_;
         vector_t standJointAngles_;
@@ -243,11 +197,6 @@ class LowController {
         std::vector<double> joint_damping;
         std::vector<double> default_joint_pos;
         std::vector<std::string> joint_names;
-        
-        std::vector<double> stand_joint_stiffness;
-        std::vector<double> stand_joint_damping;
-        std::vector<double> lie_joint_stiffness;
-        std::vector<double> lie_joint_damping;
 };
 } // namespace legged
 #endif

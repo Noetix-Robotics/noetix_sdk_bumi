@@ -47,7 +47,6 @@ DataBuffer<joydata> joy_buffer_;
 DataBuffer<NingImuData> imu_buffer_;
 AoLionDriver aoliondriver;
 
-LowController *LowController::instance = nullptr;
 vector_t currentJointAngles_;
 float current_vel_limit_ = 1.5;
 bool LowController::init(ControlMode mode) {
@@ -82,7 +81,6 @@ bool LowController::init(ControlMode mode) {
             0.0, 0.0,                          // arm_l4, arm_r4
             0.0, 0.0;                          // leg_l6, leg_r6
         currentJointAngles_.setZero();
-        instance = this;
 
         RobotSetMode::SetMode cmode;
         // cmode.mode(2);
@@ -381,7 +379,6 @@ bool LowController::updateStateEstimation() {
                 // propri_.baseEulerXyz = quatToXyz(quat);
         }
         double seconds = now.count();
-        phase_ = seconds / 1000000.0;
 
         return true;
 }
@@ -769,7 +766,6 @@ bool LowController::loadModel(std::string modelpath) {
         isfirstCompAct_ = true;
         isfirstRecObs_ = NULL;
         count = 0;
-        model_type = 0;
 
         Ort::AllocatorWithDefaultOptions allocator;
         Ort::ModelMetadata metadata = policySessionPtr->GetModelMetadata();

@@ -12,14 +12,12 @@ DataBuffer<std::array<MotorState, 21>> motor_state_buffer_;
 DataBuffer<joydata> joy_buffer_;
 DataBuffer<NingImuData> imu_buffer_;
 
-HighController *HighController::instance = nullptr;
 bool HighController::init() {
         char buf[256];
         getcwd(buf, sizeof(buf));
         std::string path = std::string(buf);
         printf("cur path is %s\n", path.c_str());
 
-        instance = this;
 
         RobotSetMode::SetMode cmode;
 

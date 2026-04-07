@@ -7,7 +7,6 @@
 #include <cmath>
 #include <memory>
 #include <mutex>
-#include <queue>
 #include <shared_mutex>
 #include <thread>
 
@@ -113,7 +112,6 @@ class HighController {
                 static HighController highcontrol;
                 return &highcontrol;
         }
-        static HighController *instance; // 静态指针，用于调用非静态方法
 
         bool init();
 
