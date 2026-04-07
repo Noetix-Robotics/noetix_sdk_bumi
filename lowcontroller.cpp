@@ -909,7 +909,7 @@ void LowController::computeObservation() {
         double cmd_y = command_[1] * scaley;
         double cmd_z = command_[2] * scalez;
 
-        if (abs(cmd_x) < 0.3)
+        if (cmd_x < 0.3)
                 cmd_x = 0.0;
         if (abs(cmd_z) < 0.3)
                 cmd_z = 0.0;
