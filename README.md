@@ -21,4 +21,5 @@ To build the examples inside this repository:
 ```
 
 For more reference information, please go to [Bumi DDS_SDK](https://noetixrobotics.feishu.cn/docx/U4radEDEpoUznExqrqBcgrKinhd).
+[Bumi DDS_SDK PYTHON](https://noetixrobotics.feishu.cn/wiki/NoUOwvFBFiXmVVkm7NSczqbVnKd).
 ### Notice
