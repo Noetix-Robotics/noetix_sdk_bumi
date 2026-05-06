@@ -31,14 +31,6 @@ int main(int argc, char *argv[]) {
                                 key_updown[i] = 1;
                         }
                 }
-                for (int i = 0; i < 14; i++) {
-                        if (remote_data.button[i] == 0) {
-                                key_updown[i] = 0;
-                                key_inuse[i] = 0;
-                        } else if (remote_data.button[i] == 1) {
-                                key_updown[i] = 1;
-                        }
-                }
                 action = ControlCmd::DEFAULT;
                 x = remote_data.axes[1];
                 yaw = remote_data.axes[0];
