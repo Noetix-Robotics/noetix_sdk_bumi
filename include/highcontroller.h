@@ -3,11 +3,6 @@
 
 #include "DDSWrapper.h"
 #include "common.h"
-#include <atomic>
-#include <eigen3/Eigen/Dense>
-#include <cmath>
-#include <memory>
-#include <mutex>
 #include <shared_mutex>
 
 using namespace org::eclipse::cyclonedds;

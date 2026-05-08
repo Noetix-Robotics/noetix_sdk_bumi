@@ -2,12 +2,7 @@
 #define LowController_H
 #include "DDSWrapper.h"
 #include "common.h"
-#include <cmath>
-#include <eigen3/Eigen/Dense>
-#include <memory>
-#include <mutex>
 #include <shared_mutex>
-#include <thread>
 
 using namespace org::eclipse::cyclonedds;
 

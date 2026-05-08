@@ -1,9 +1,4 @@
 #include "highcontroller.h"
-#include <Robot_status.hpp>
-#include <common.h>
-#include <cstdint>
-#include <stdio.h>
-#include <unistd.h>
 using namespace org::eclipse::cyclonedds;
 
 namespace legged {

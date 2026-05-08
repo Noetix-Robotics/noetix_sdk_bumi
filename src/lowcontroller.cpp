@@ -1,11 +1,4 @@
 #include "lowcontroller.h"
-#include "aolion_driver.h"
-#include "common.h"
-#include <chrono>
-#include <common.h>
-#include <stdio.h>
-#include <thread>
-#include <unistd.h>
 
 namespace legged {
 // JoystickFilter filter;
@@ -13,7 +6,6 @@ DataBuffer<std::array<MotorCmd, 21>> motor_cmd_buffer_;
 DataBuffer<std::array<MotorState, 21>> motor_state_buffer_;
 DataBuffer<joydata> joy_buffer_;
 DataBuffer<NingImuData> imu_buffer_;
-AoLionDriver aoliondriver;
 
 vector_t currentJointAngles_;
 float current_vel_limit_ = 1.5;

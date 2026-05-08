@@ -4,3 +4,5 @@ build
 compile_commands.json
 lowcontrol
 highcontrol
+example_high
+example_low
