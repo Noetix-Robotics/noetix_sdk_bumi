@@ -17,7 +17,7 @@ Before building or running the SDK, you can read the documentation linked here t
 To build the examples inside this repository:
 
 ```bash
-./build_release.sh
+./build.sh
 ```
 
 For more reference information, please go to [Bumi DDS_SDK](https://noetixrobotics.feishu.cn/docx/U4radEDEpoUznExqrqBcgrKinhd).
