@@ -27,3 +27,6 @@ try:
     ctrl.set_joint(cmds)
 except KeyboardInterrupt:
     print("stop")
+
+while True:
+    pass
