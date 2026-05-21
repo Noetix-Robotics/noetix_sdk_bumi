@@ -26,3 +26,4 @@ else
 fi
 
 make -j4
+ln -s ../lib lib

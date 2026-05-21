@@ -57,13 +57,13 @@ target_link_libraries(lowcontrol_py
 )
 
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
-add_executable(example_low example_low.cpp src/lowcontroller.cpp)
+add_executable(example_low examples_cpp/example_low.cpp src/lowcontroller.cpp)
 
-add_executable(example_high example_high.cpp src/highcontroller.cpp)
+add_executable(example_high examples_cpp/example_high.cpp src/highcontroller.cpp)
 # Link both executables to idl data type library and ddscxx.
 target_include_directories(example_high  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_include_directories(example_low  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
