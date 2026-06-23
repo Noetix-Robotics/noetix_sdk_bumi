@@ -9,6 +9,14 @@ namespace py = pybind11;
 using namespace legged;
 
 PYBIND11_MODULE(highcontrol_py, m) {
+	// RobotBmsData
+        py::class_<RobotBmsData>(m, "RobotBmsData")
+            .def(py::init<>())
+            .def_readonly("battery_temp", &RobotBmsData::battery_temp_)
+            .def_readonly("battery_alarm", &RobotBmsData::battery_alarm_)
+            .def_readonly("battery_soc", &RobotBmsData::battery_soc_)
+            .def_readonly("battery_soh", &RobotBmsData::battery_soh_);
+
         // ControlCmd
         py::enum_<ControlCmd>(m, "ControlCmd")
             .value("WALK", ControlCmd::WALK)
@@ -101,7 +109,8 @@ PYBIND11_MODULE(highcontrol_py, m) {
 
             .def("from_dds_get_joydata", &HighController::from_dds_get_joydata)
             .def("get_imu_data", &HighController::get_imu_data)
-            .def("get_joint_state", &HighController::get_joint_state);
+            .def("get_joint_state", &HighController::get_joint_state)
+            .def("get_robot_bms_data", &HighController::get_robot_bms_data);
 
         py::class_<AoLionDriver>(m, "AoLionDriver")
             .def(py::init<>())

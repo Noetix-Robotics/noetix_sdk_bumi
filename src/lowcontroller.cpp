@@ -13,6 +13,8 @@ bool LowController::init() {
         char buf[256];
         getcwd(buf, sizeof(buf));
         std::string path = std::string(buf);
+        printf("SDK_VERSION: %s \r\n", SDK_VERSION);
+        printf("cur path is %s\n", path.c_str());
 
         RobotSetMode::SetMode cmode;
         cmode.mode(2);
@@ -75,13 +77,20 @@ bool LowController::init() {
                     // printf("button %d =%d\n", i,
                     // ddsdata.joydata().button()[i]);
                     //}
+                    RobotStatus::BmsState state = ddsdata.bmsdata();
+                    RobotBmsData bms_data;
+                    bms_data.battery_soc_ = state.battery_soc();
+                    bms_data.battery_alarm_ = state.battery_alarm();
+                    bms_data.battery_soh_ = state.battery_soh();
+                    bms_data.battery_temp_ = state.battery_temp();
+
                     memcpy(remote_data.button, &ddsdata.joydata().button(),
                            sizeof(remote_data.button));
                     memcpy(remote_data.axes, &ddsdata.joydata().axes(),
                            sizeof(remote_data.axes));
 
                     LowController::Instance()->set_robotstatusdata(
-                        data, imudata, remote_data);
+                        data, imudata, remote_data, bms_data);
             });
 
         send_thread_ = std::thread(&LowController::send_thread_func, this);
@@ -95,10 +104,16 @@ bool LowController::init() {
 }
 
 void LowController::set_robotstatusdata(std::array<MotorState, 21> data,
-                                        NingImuData imudata, joydata joy_data) {
+                                        NingImuData imudata, joydata joy_data,
+                                        RobotBmsData bms_data) {
         motor_state_buffer_.SetData(data);
         imu_buffer_.SetData(imudata);
         joy_buffer_.SetData(joy_data);
+        curbms_.store(bms_data);
+}
+
+const RobotBmsData LowController::get_robot_bms_data() {
+        return curbms_.load();
 }
 
 void LowController::send_thread_func() {

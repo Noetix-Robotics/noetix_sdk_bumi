@@ -1,4 +1,5 @@
 #include "highcontroller.h"
+
 using namespace org::eclipse::cyclonedds;
 
 namespace legged {
@@ -10,6 +11,7 @@ bool HighController::init() {
         char buf[256];
         getcwd(buf, sizeof(buf));
         std::string path = std::string(buf);
+        printf("SDK_VERSION: %s \r\n", SDK_VERSION);
         printf("cur path is %s\n", path.c_str());
 
         RobotSetMode::SetMode cmode;
@@ -59,6 +61,12 @@ bool HighController::init() {
                     }
 
                     RobotStatus::BmsState state = ddsdata.bmsdata();
+                    RobotBmsData bms_data;
+                    bms_data.battery_soc_ = state.battery_soc();
+                    bms_data.battery_alarm_ = state.battery_alarm();
+                    bms_data.battery_soh_ = state.battery_soh();
+                    bms_data.battery_temp_ = state.battery_temp();
+
                     int curmode = ddsdata.workmode();
                     if (premode == 200) {
                             premode = curmode;
@@ -78,7 +86,7 @@ bool HighController::init() {
                     memcpy(remote_data.axes, &ddsdata.joydata().axes(),
                            sizeof(remote_data.axes));
                     HighController::Instance()->set_robotstatusdata(
-                        data, imudata, remote_data, curmode);
+                        data, imudata, remote_data, curmode, bms_data);
             });
         printf("[DEBUG]: init finish \r\n");
         return true;
@@ -103,11 +111,16 @@ int HighController::get_mode() { return curmode_.load(); }
 
 void HighController::set_robotstatusdata(std::array<MotorState, 21> data,
                                          NingImuData imudata, joydata joy_data,
-                                         int curmode) {
+                                         int curmode, RobotBmsData bms_data) {
         motor_state_buffer_.SetData(data);
         imu_buffer_.SetData(imudata);
         joy_buffer_.SetData(joy_data);
         curmode_.store(curmode);
+        curbms_.store(bms_data);
+}
+
+const RobotBmsData HighController::get_robot_bms_data() {
+	return curbms_.load();
 }
 
 const NingImuData HighController::get_imu_data() {

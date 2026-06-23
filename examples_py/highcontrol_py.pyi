@@ -31,6 +31,12 @@ class ControlCmd(Enum):
 # Data Classes
 # =====================
 
+class RobotBmsData:
+    battery_temp: int
+    battery_alarm: int
+    battery_soc: int
+    battery_soh: int
+
 class JoyData:
     def __init__(self) -> None: ...
     @property
@@ -86,6 +92,7 @@ class HighController:
     def from_dds_get_joydata(self) -> JoyData: ...
     def get_imu_data(self) -> NingImuData: ...
     def get_joint_state(self) -> List[MotorState]: ...
+    def get_robot_bms_data(self) -> RobotBmsData: ...
 
 class AoLionDriver:
     def __init__(self) -> None: ...

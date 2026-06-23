@@ -31,31 +31,31 @@ struct RobotCfg {
                 float cycle_time;
         };
 
-        //struct InitState {
-                //// default joint angles
-                //scalar_t arm_l1_joint;
-                //scalar_t arm_l2_joint;
-                //scalar_t arm_l3_joint;
-                //scalar_t arm_l4_joint;
-                //scalar_t arm_l5_joint;
-                //scalar_t arm_l6_joint;
-                //scalar_t leg_l1_joint;
-                //scalar_t leg_l2_joint;
-                //scalar_t leg_l3_joint;
-                //scalar_t leg_l4_joint;
-                //scalar_t leg_l5_joint;
-                //scalar_t arm_r1_joint;
-                //scalar_t arm_r2_joint;
-                //scalar_t arm_r3_joint;
-                //scalar_t arm_r4_joint;
-                //scalar_t arm_r5_joint;
-                //scalar_t arm_r6_joint;
-                //scalar_t leg_r1_joint;
-                //scalar_t leg_r2_joint;
-                //scalar_t leg_r3_joint;
-                //scalar_t leg_r4_joint;
-                //scalar_t leg_r5_joint;
-                //scalar_t waist_1_joint;
+        // struct InitState {
+        //// default joint angles
+        // scalar_t arm_l1_joint;
+        // scalar_t arm_l2_joint;
+        // scalar_t arm_l3_joint;
+        // scalar_t arm_l4_joint;
+        // scalar_t arm_l5_joint;
+        // scalar_t arm_l6_joint;
+        // scalar_t leg_l1_joint;
+        // scalar_t leg_l2_joint;
+        // scalar_t leg_l3_joint;
+        // scalar_t leg_l4_joint;
+        // scalar_t leg_l5_joint;
+        // scalar_t arm_r1_joint;
+        // scalar_t arm_r2_joint;
+        // scalar_t arm_r3_joint;
+        // scalar_t arm_r4_joint;
+        // scalar_t arm_r5_joint;
+        // scalar_t arm_r6_joint;
+        // scalar_t leg_r1_joint;
+        // scalar_t leg_r2_joint;
+        // scalar_t leg_r3_joint;
+        // scalar_t leg_r4_joint;
+        // scalar_t leg_r5_joint;
+        // scalar_t waist_1_joint;
         //};
 
         struct ObsScales {
@@ -72,7 +72,7 @@ struct RobotCfg {
         scalar_t clipActions;
         scalar_t clipObs;
 
-        //InitState initState;
+        // InitState initState;
         ObsScales obsScales;
         ControlCfg controlCfg;
 
@@ -110,25 +110,30 @@ class HighController {
 
         bool init();
 
-        void publish_cmd(double ver, double hor, ControlCmd action, uint16_t index);
+        void publish_cmd(double ver, double hor, ControlCmd action,
+                         uint16_t index);
 
-	int get_mode();
+        int get_mode();
 
-	joydata from_dds_get_joydata();
+        joydata from_dds_get_joydata();
 
         const NingImuData get_imu_data();
 
         const std::array<MotorState, 21> get_joint_state();
 
+	const RobotBmsData get_robot_bms_data();
+
+
       protected:
         void set_robotstatusdata(std::array<MotorState, 21> motorstate_data,
-                                 NingImuData imudata, joydata joy_data, int curmode);
+                                 NingImuData imudata, joydata joy_data,
+                                 int curmode, RobotBmsData data);
 
       private:
-
         DDSWrapper ddswrapper;
         int initfinish = 0;
-	std::atomic<int> curmode_;
+        std::atomic<int> curmode_;
+        std::atomic<struct RobotBmsData> curbms_;
 };
 } // namespace legged
 #endif

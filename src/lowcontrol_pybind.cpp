@@ -9,6 +9,14 @@ namespace py = pybind11;
 using namespace legged;
 
 PYBIND11_MODULE(lowcontrol_py, m) {
+        // RobotBmsData
+        py::class_<RobotBmsData>(m, "RobotBmsData")
+            .def(py::init<>())
+            .def_readonly("battery_temp", &RobotBmsData::battery_temp_)
+            .def_readonly("battery_alarm", &RobotBmsData::battery_alarm_)
+            .def_readonly("battery_soc", &RobotBmsData::battery_soc_)
+            .def_readonly("battery_soh", &RobotBmsData::battery_soh_);
+
         py::class_<MotorCmd>(m, "MotorCmd")
             .def(py::init<>())
 
@@ -109,7 +117,9 @@ PYBIND11_MODULE(lowcontrol_py, m) {
 
             // 根据关节名字获取索引
             .def("getJointsIndex", &LowController::getJointsIndex,
-                 py::arg("jointname"));
+                 py::arg("jointname"))
+
+            .def("get_robot_bms_data", &LowController::get_robot_bms_data);
 
         py::class_<AoLionDriver>(m, "AoLionDriver")
             .def(py::init<>())

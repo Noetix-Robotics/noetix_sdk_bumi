@@ -4,6 +4,12 @@ from typing import Any
 import numpy as np
 from typing import List
 
+class RobotBmsData:
+    battery_temp: int
+    battery_alarm: int
+    battery_soc: int
+    battery_soh: int
+
 class MotorCmd:
     pos: float
     vel: float
@@ -54,6 +60,7 @@ class LowController:
     def get_imu_data(self) -> NingImuData: ...
     def from_dds_get_joydata(self) -> JoyData: ...
     def getJointsIndex(self, jointname: str) -> int: ...
+    def get_robot_bms_data(self) -> RobotBmsData: ...
 
 class AoLionDriver:
     def __init__(self) -> None: ...

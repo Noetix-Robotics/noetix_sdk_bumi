@@ -8,9 +8,9 @@
 #include <eigen3/Eigen/Dense>
 #include <map>
 #include <string>
-#include <thread>
-#include <vector>
 namespace legged {
+#define SDK_VERSION "2.0.0"
+
 using scalar_t = double;
 using vector_t = Eigen::Matrix<scalar_t, Eigen::Dynamic, 1>;
 using matrix_t = Eigen::Matrix<scalar_t, Eigen::Dynamic, Eigen::Dynamic>;
@@ -41,11 +41,19 @@ enum class ControlCmd : uint8_t {
         DANCE,
         FALLTOSTAND,
         STANDTOFALL,
-	DANCE1,
-	DANCE2,
-	TEAR,
-	DEFAULT
+        DANCE1,
+        DANCE2,
+        TEAR,
+        DEFAULT
 };
+
+struct RobotBmsData {
+        uint16_t battery_temp_ = 0;
+        uint16_t battery_alarm_ = 0;
+        uint16_t battery_soc_ = 0;
+        uint16_t battery_soh_ = 0;
+};
+
 struct ControlCfg {
         std::map<std::string, float> stiffness;
         std::map<std::string, float> damping;
