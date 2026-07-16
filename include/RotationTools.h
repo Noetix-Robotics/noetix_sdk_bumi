@@ -73,3 +73,45 @@ Eigen::Matrix<SCALAR_T, 3, 1> quatToXyz(const Eigen::Quaternion<SCALAR_T>& q) {
 
   return xyz;
 }
+
+template <typename SCALAR_T>
+Eigen::Quaterniond matrix_to_quaternion_eigen(const Eigen::Matrix3d& r1) {
+    Eigen::Quaterniond q(r1);
+    q.normalize();
+    return q;
+}
+
+template <typename SCALAR_T>
+// 提取偏航分量的四元数函数
+Eigen::Quaterniond yaw_quat(const Eigen::Quaterniond& q) {
+  double w = q.w(), x = q.x(), y = q.y(), z = q.z();
+  
+  // 计算偏航角 (yaw)
+  double yaw = std::atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z));
+  
+  // 返回只包含偏航旋转的四元数
+  return Eigen::Quaterniond(
+      std::cos(yaw / 2),  // w
+      0,                  // x
+      0,                  // y
+      std::sin(yaw / 2)   // z
+  );
+}
+
+template <typename SCALAR_T>
+Eigen::Quaterniond subtract_frame_transforms(const Eigen::Quaterniond& q1, const Eigen::Quaterniond& q2, const Eigen::Quaterniond& init_to_world) {
+
+    Eigen::Quaterniond q1_norm = q1.normalized();
+    Eigen::Quaterniond q2_norm = q2.normalized();
+    Eigen::Quaterniond init_to_world_norm = init_to_world.normalized();
+
+    Eigen::Quaterniond delta_real = init_to_world_norm * q2_norm;
+
+    Eigen::Quaterniond delta_q = q1_norm.conjugate() * delta_real;
+    return delta_q.normalized();
+}
+
+template <typename SCALAR_T>
+Eigen::Matrix3d QuatToMat(const Eigen::Quaterniond& q) {
+    return q.normalized().toRotationMatrix();
+}

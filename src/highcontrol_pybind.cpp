@@ -9,7 +9,7 @@ namespace py = pybind11;
 using namespace legged;
 
 PYBIND11_MODULE(highcontrol_py, m) {
-	// RobotBmsData
+        // RobotBmsData
         py::class_<RobotBmsData>(m, "RobotBmsData")
             .def(py::init<>())
             .def_readonly("battery_temp", &RobotBmsData::battery_temp_)
@@ -102,8 +102,9 @@ PYBIND11_MODULE(highcontrol_py, m) {
 
             .def("init", &HighController::init)
 
-            .def("publish_cmd", &HighController::publish_cmd, py::arg("ver"),
-                 py::arg("hor"), py::arg("action"), py::arg("index") = 0)
+            .def("publish_cmd", &HighController::publish_cmd, py::arg("x"),
+                 py::arg("y"), py::arg("z"), py::arg("action"),
+                 py::arg("index") = 0)
 
             .def("get_mode", &HighController::get_mode)
 

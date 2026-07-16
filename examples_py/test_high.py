@@ -159,6 +159,6 @@ while True:
         print("[DEBUG]: STANDTOFALL")
 
     # ===== 发送指令 =====
-    ctrl.publish_cmd(x, yaw, action, fileindex)
+    ctrl.publish_cmd(x, 0, yaw, action, fileindex)
 
     sleep(0.01)  # 防止CPU打满

@@ -1,5 +1,6 @@
+#include "common.h"
 #include "highcontroller.h"
-
+#include <algorithm>
 using namespace legged;
 
 int main(int argc, char *argv[]) {
@@ -125,7 +126,7 @@ int main(int argc, char *argv[]) {
                         key_inuse[Key12] = 1;
                 }
 
-                ctrl->publish_cmd(x, yaw, action, fileindex);
+                ctrl->publish_cmd(x, 0, yaw, action, fileindex);
                 sleep_ms(2);
         }
 

@@ -1,4 +1,5 @@
 #include "highcontroller.h"
+#include <cstdio>
 
 using namespace org::eclipse::cyclonedds;
 
@@ -92,11 +93,12 @@ bool HighController::init() {
         return true;
 }
 
-void HighController::publish_cmd(double ver, double hor, ControlCmd action,
-                                 uint16_t index) {
+void HighController::publish_cmd(double x, double y, double z,
+                                 ControlCmd action, uint16_t index) {
         RobotControlCmd::ControlCmd controlcmd;
-        controlcmd.axes()[0] = hor;
-        controlcmd.axes()[1] = ver;
+        controlcmd.axes()[0] = z;
+        controlcmd.axes()[1] = x;
+	controlcmd.axes()[2] = y;
         controlcmd.action() = (int32_t)action;
         if (controlcmd.action() == 8 || controlcmd.action() == 10) {
                 controlcmd.data() = index; // teach dance index
@@ -120,7 +122,7 @@ void HighController::set_robotstatusdata(std::array<MotorState, 21> data,
 }
 
 const RobotBmsData HighController::get_robot_bms_data() {
-	return curbms_.load();
+        return curbms_.load();
 }
 
 const NingImuData HighController::get_imu_data() {

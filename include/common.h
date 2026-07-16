@@ -26,7 +26,8 @@ template <typename T> using feet_array_t = std::array<T, 4>;
 using contact_flag_t = feet_array_t<bool>;
 
 enum class ControlMode : uint8_t { LOWMODE, HIGHMODE, USERMODE, DEFAULT };
-enum class ControlCmd : uint8_t {
+
+enum class ControlCmd : uint32_t {
         WALK,
         SWING,
         SHAKE,
@@ -44,7 +45,7 @@ enum class ControlCmd : uint8_t {
         DANCE1,
         DANCE2,
         TEAR,
-        DEFAULT
+        DEFAULT,
 };
 
 struct RobotBmsData {
@@ -122,12 +123,49 @@ struct JointState {
         scalar_t waist_2_joint;
 };
 
+struct RLRobotCfg {
+        struct ControlCfg {
+                std::map<std::string, float> stiffness;
+                std::map<std::string, float> damping;
+                float actionScale;
+                int decimation;
+                float user_torque_limit;
+                float user_power_limit;
+                float cycle_time;
+                float bf_cycle_time;
+        };
+
+        struct ObsScales {
+                scalar_t linVel;
+                scalar_t angVel;
+                scalar_t dofPos;
+                scalar_t dofVel;
+                scalar_t quat;
+                scalar_t gravity;
+                scalar_t heightMeasurements;
+        };
+
+        bool encoder_nomalize;
+
+        scalar_t clipActions;
+        scalar_t clipObs;
+
+        // InitState initState;
+        ObsScales obsScales;
+        ControlCfg controlCfg;
+
+        int loophz;
+        double cycletimeerrorThreshold;
+        int ThreadPriority;
+};
+
 struct Proprioception {
         vector_t jointPos;
         vector_t jointVel;
         vector3_t baseAngVel;
         vector3_t baseEulerXyz;
         vector3_t projectedGravity;
+        quaternion_t robot_quat_;
 };
 
 struct Command {

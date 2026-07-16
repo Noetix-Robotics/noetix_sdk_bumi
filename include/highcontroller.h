@@ -110,7 +110,7 @@ class HighController {
 
         bool init();
 
-        void publish_cmd(double ver, double hor, ControlCmd action,
+        void publish_cmd(double x, double y, double z, ControlCmd action,
                          uint16_t index);
 
         int get_mode();
@@ -121,8 +121,7 @@ class HighController {
 
         const std::array<MotorState, 21> get_joint_state();
 
-	const RobotBmsData get_robot_bms_data();
-
+        const RobotBmsData get_robot_bms_data();
 
       protected:
         void set_robotstatusdata(std::array<MotorState, 21> motorstate_data,

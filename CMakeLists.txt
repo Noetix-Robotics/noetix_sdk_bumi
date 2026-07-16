@@ -62,18 +62,28 @@ set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
 add_executable(example_low examples_cpp/example_low.cpp src/lowcontroller.cpp)
-
+add_executable(example_policy_walk examples_cpp/example_policy_walk.cpp src/lowcontroller.cpp)
 add_executable(example_high examples_cpp/example_high.cpp src/highcontroller.cpp)
 # Link both executables to idl data type library and ddscxx.
 target_include_directories(example_high  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_include_directories(example_low  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_include_directories(example_policy_walk  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm.*|arm|aarch64")
         target_link_directories(example_high PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/aarch64)
         target_link_directories(example_low PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/aarch64)
+        target_link_directories(example_policy_walk PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/aarch64)
         target_link_directories(lowcontrol_py PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/aarch64)
         target_link_directories(highcontrol_py PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/aarch64)
         target_link_libraries(example_low
+                Threads::Threads
+                onnxruntime
+                ${LIB_DIR}/aarch64/libdriver.a
+                ${LIB_DIR}/aarch64/libyaml-cpp.a
+                ${LIB_DIR}/aarch64/libddsc.so
+                ${LIB_DIR}/aarch64/libddscxx.so
+        )
+        target_link_libraries(example_policy_walk
                 Threads::Threads
                 onnxruntime
                 ${LIB_DIR}/aarch64/libdriver.a
@@ -107,9 +117,18 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm.*|arm|aarch64")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64)|(AMD64)|(^i686)")
         target_link_directories(example_high PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/x86_64)
         target_link_directories(example_low PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/x86_64)
+        target_link_directories(example_policy_walk PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/x86_64)
         target_link_directories(lowcontrol_py PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/x86_64)
         target_link_directories(highcontrol_py PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/x86_64)
         target_link_libraries(example_low
+                Threads::Threads
+                onnxruntime
+                ${LIB_DIR}/x86_64/libdriver.a
+                ${LIB_DIR}/x86_64/libyaml-cpp.a
+                ${LIB_DIR}/x86_64/libddsc.so
+                ${LIB_DIR}/x86_64/libddscxx.so
+        )
+        target_link_libraries(example_policy_walk
                 Threads::Threads
                 onnxruntime
                 ${LIB_DIR}/x86_64/libdriver.a
@@ -145,5 +164,6 @@ if(DEFINED ENV{SYSTEM_TEAMFOUNDATIONSERVERURI})
         if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND ANALYZER STREQUAL "on")
                 target_compile_options(example_high PRIVATE -fno-analyzer)
                 target_compile_options(example_low PRIVATE -fno-analyzer)
+                target_compile_options(example_policy_walk PRIVATE -fno-analyzer)
         endif()
 endif()
