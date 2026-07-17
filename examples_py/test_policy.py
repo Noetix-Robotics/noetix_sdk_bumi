@@ -862,6 +862,7 @@ def process():
 
     elif mode_ == "USERMODE":
         setparameter(cmd, isChangeMode_)
+        isChangeMode_ = False
         handle_user_mode()
 
     else:
