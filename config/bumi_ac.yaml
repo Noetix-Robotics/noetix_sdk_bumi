@@ -112,6 +112,133 @@ falltostand:
     - 12.000
     - 10.000
     - 10.000
+
+test_dance2:
+  action_scale:
+    - 0.25
+    - 0.25
+    - 0.127
+    - 0.112
+    - 0.112
+    - 0.115
+    - 0.115
+    - 0.112
+    - 0.112
+    - 0.115
+    - 0.115
+    - 0.333
+    - 0.333
+    - 0.115
+    - 0.115
+    - 0.325
+    - 0.325
+    - 0.115
+    - 0.115
+    - 0.325
+    - 0.325
+  default_joint_pos:
+    - -0.149
+    - -0.149
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.3
+    - -0.3
+    - 0.322
+    - 0.322
+    - 0.0
+    - 0.0
+    - -0.172
+    - -0.172
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+  joint_damping:
+    - 3.0
+    - 3.0
+    - 3.4
+    - 3.0
+    - 3.0
+    - 0.4
+    - 0.4
+    - 2.5
+    - 2.5
+    - 0.4
+    - 0.4
+    - 2.0
+    - 2.0
+    - 0.4
+    - 0.4
+    - 0.5
+    - 0.5
+    - 0.4
+    - 0.4
+    - 0.5
+    - 0.5
+  joint_names:
+    - l_leg_pitch_joint
+    - r_leg_pitch_joint
+    - waist_yaw_joint
+    - l_leg_roll_joint
+    - r_leg_roll_joint
+    - l_arm_pitch_joint
+    - r_arm_pitch_joint
+    - l_leg_yaw_joint
+    - r_leg_yaw_joint
+    - l_arm_roll_joint
+    - r_arm_roll_joint
+    - l_knee_pitch_joint
+    - r_knee_pitch_joint
+    - l_arm_yaw_joint
+    - r_arm_yaw_joint
+    - l_ankle_pitch_joint
+    - r_ankle_pitch_joint
+    - l_elbow_pitch_joint
+    - r_elbow_pitch_joint
+    - l_ankle_roll_joint
+    - r_ankle_roll_joint
+  joint_stiffness:
+    - 60.0
+    - 60.0
+    - 53.0
+    - 60.0
+    - 60.0
+    - 12.0
+    - 12.0
+    - 60.0
+    - 60.0
+    - 12.0
+    - 12.0
+    - 45.0
+    - 45.0
+    - 12.0
+    - 12.0
+    - 10.0
+    - 10.0
+    - 12.0
+    - 12.0
+    - 10.0
+    - 10.0
+  control:
+    decimation: 10
+  normalization:
+    clip_scales:
+      clip_observations: 18.0
+      clip_actions: 18.0
+  size:
+    actions_size: 21
+    observations_size: 114
+    stack_size: 5
+  axis_mappings:
+    scalez: 1.0
+    scalex: 0.8
+    scaley: 0.0
+
 # Stand to Fall configuration
 standtofall:
   action_scale:

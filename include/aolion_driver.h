@@ -60,7 +60,7 @@
 #define key10  0xa
 #define key11 0x6
 #define key12  0xb
-namespace legged{
+namespace noetix{
 
 // struct joydata{
 //     double axes[2];//horz,vert;

@@ -1,6 +1,6 @@
 #!/bin/bash
 if [ "$1" = "clean" ]; then
-    rm -rf build example_low example_high
+    rm -rf build
     exit 0
 fi
 get_arch=$(uname -m)
@@ -25,5 +25,4 @@ else
     cmake ..
 fi
 
-make -j4
-ln -s ../lib lib
+make -j8

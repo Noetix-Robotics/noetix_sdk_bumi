@@ -1,7 +1,6 @@
 #include "lowcontroller.h"
-#include <array>
-#include <common.h>
-using namespace legged;
+#include "unistd.h"
+using namespace noetix;
 
 int main(int argc, char *argv[]) {
         char buf[256];

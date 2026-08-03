@@ -6,7 +6,7 @@
 #include "highcontroller.h"
 
 namespace py = pybind11;
-using namespace legged;
+using namespace noetix;
 
 PYBIND11_MODULE(highcontrol_py, m) {
         // RobotBmsData

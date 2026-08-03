@@ -6,7 +6,7 @@
 #include "lowcontroller.h"
 
 namespace py = pybind11;
-using namespace legged;
+using namespace noetix;
 
 PYBIND11_MODULE(lowcontrol_py, m) {
         // RobotBmsData

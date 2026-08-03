@@ -5,7 +5,7 @@
 #include "yaml-cpp/yaml.h"
 
 // Controllerbase controllerbase;
-using namespace legged;
+using namespace noetix;
 LowController *ctrl;
 std::vector<std::string> jointNames{
     "leg_l1_joint", "leg_r1_joint", "waist_1_joint", "leg_l2_joint",
@@ -811,7 +811,7 @@ int main() {
         std::string ddsxml = "file://" + path + "/config/dds.xml";
         setenv("CYCLONEDDS_URI", ddsxml.c_str(), 1);
         printf("cur path is %s\n", path.c_str());
-        ctrl = legged::LowController::Instance();
+        ctrl = LowController::Instance();
         ctrl->init();
         loadModel(path + "/policy/policy.onnx");
         init();

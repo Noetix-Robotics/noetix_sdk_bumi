@@ -3,13 +3,17 @@
 
 // #include <Eigen/Core>
 // #include <Eigen/Dense>
-#include <atomic>
-#include <chrono>
 #include <eigen3/Eigen/Dense>
 #include <map>
-#include <string>
-namespace legged {
-#define SDK_VERSION "2.0.0"
+#include <memory>
+#include <mutex>
+#include <shared_mutex>
+#include <queue>
+#include "thread"
+namespace noetix {
+#define SDK_VERSION "3.1.0"
+
+// ==================== MOTION ====================
 
 using scalar_t = double;
 using vector_t = Eigen::Matrix<scalar_t, Eigen::Dynamic, 1>;
@@ -23,6 +27,61 @@ using Duration = std::chrono::duration<double>;
 using tensor_element_t = float;
 
 template <typename T> using feet_array_t = std::array<T, 4>;
+
+struct RobotCfg {
+        struct ControlCfg {
+                std::map<std::string, float> stiffness;
+                std::map<std::string, float> damping;
+                float actionScale;
+                int decimation;
+                float user_torque_limit;
+                float user_power_limit;
+                float cycle_time;
+        };
+
+        struct ObsScales {
+                scalar_t linVel;
+                scalar_t angVel;
+                scalar_t dofPos;
+                scalar_t dofVel;
+                scalar_t quat;
+                scalar_t heightMeasurements;
+        };
+
+        bool encoder_nomalize;
+
+        scalar_t clipActions;
+        scalar_t clipObs;
+
+        // InitState initState;
+        ObsScales obsScales;
+        ControlCfg controlCfg;
+
+        int loophz;
+        double cycletimeerrorThreshold;
+        int ThreadPriority;
+};
+
+template <typename T> class DataBuffer {
+      public:
+        void SetData(const T &newData) {
+                std::unique_lock<std::shared_mutex> lock(mutex);
+                data = std::make_shared<T>(newData);
+        }
+        std::shared_ptr<const T> GetData() {
+                std::shared_lock<std::shared_mutex> lock(mutex);
+                return data ? data : nullptr;
+        }
+        void Clear() {
+                std::unique_lock<std::shared_mutex> lock(mutex);
+                data = nullptr;
+        }
+
+      private:
+        std::shared_ptr<T> data;
+        std::shared_mutex mutex;
+};
+
 using contact_flag_t = feet_array_t<bool>;
 
 enum class ControlMode : uint8_t { LOWMODE, HIGHMODE, USERMODE, DEFAULT };
@@ -45,7 +104,7 @@ enum class ControlCmd : uint32_t {
         DANCE1,
         DANCE2,
         TEAR,
-        DEFAULT,
+        DEFAULT
 };
 
 struct RobotBmsData {
@@ -64,29 +123,6 @@ struct ControlCfg {
         float user_power_limit;
         float cycle_time;
 };
-
-// struct InitState
-// {
-//   // default joint angles
-//   scalar_t arm_l1_joint;
-//   scalar_t arm_l2_joint;
-//   scalar_t arm_l3_joint;
-//   scalar_t arm_l4_joint;
-//   scalar_t leg_l1_joint;
-//   scalar_t leg_l2_joint;
-//   scalar_t leg_l3_joint;
-//   scalar_t leg_l4_joint;
-//   scalar_t leg_l5_joint;
-//   scalar_t arm_r1_joint;
-//   scalar_t arm_r2_joint;
-//   scalar_t arm_r3_joint;
-//   scalar_t arm_r4_joint;
-//   scalar_t leg_r1_joint;
-//   scalar_t leg_r2_joint;
-//   scalar_t leg_r3_joint;
-//   scalar_t leg_r4_joint;
-//   scalar_t leg_r5_joint;
-// };
 
 struct ObsScales {
         scalar_t linVel;
@@ -202,7 +238,160 @@ struct joydata {
         int button[14];
 };
 
-} // namespace legged
+// ==================== MEDIA ====================
+
+template<typename T>
+class StreamBuffer
+{
+public:
+
+    void Push(const T &data)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+
+        queue_.push(data);
+
+
+        // 保留最近5帧
+        while(queue_.size() > max_size_)
+        {
+            queue_.pop();
+        }
+    }
+
+
+    bool Pop(T &data)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+
+
+        if(queue_.empty())
+        {
+            return false;
+        }
+
+
+        data = queue_.front();
+
+        queue_.pop();
+
+        return true;
+    }
+
+
+    void Clear()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+
+        while(!queue_.empty())
+        {
+            queue_.pop();
+        }
+    }
+
+
+private:
+
+    std::queue<T> queue_;
+
+    std::mutex mutex_;
+
+    const size_t max_size_ = 5;
+};
+
+namespace media {
+
+struct Header {
+        uint64_t message_id = 0;
+        uint64_t timestamp_us = 0;
+        std::string sn;
+};
+
+enum class WorkStatus { READY, SLEEPED, WAKEUPED, EXIT };
+
+enum class StatusChangeReason {
+        SYSTEM_LAUNCH,
+        CMD_RESET,
+        AUDIO_WAKEUPED,
+        CMD_WAKEUPED,
+        AUDIO_SLEEPED,
+        CMD_SLEEPED,
+        TIMEOUT_SLEEPED,
+        ERROR_SLEEPED
+};
+
+enum class SystemControlType { TO_WAKEUP, TO_SLEEP, TO_RESET };
+
+struct SystemControl {
+        Header header;
+        SystemControlType type = SystemControlType::TO_WAKEUP;
+        bool need_audio_response = true;
+};
+
+struct SystemStatus {
+        Header header;
+        WorkStatus value = WorkStatus::READY;
+        StatusChangeReason reason = StatusChangeReason::SYSTEM_LAUNCH;
+};
+
+struct SystemError {
+        Header header;
+        int32_t code = 0;
+        std::string message;
+};
+
+struct CommonConfig {
+        Header header;
+        std::string common_config;
+};
+
+struct AudioStream {
+        Header header;
+        uint64_t timestamp_us = 0;
+        uint32_t channels = 0;
+        uint32_t sample_rate = 0;
+        uint32_t format = 0;
+        uint32_t duration_ms = 0;
+        std::vector<int16_t> audio_data;
+};
+
+struct AudioVolume {
+        Header header;
+        int32_t value = 0;
+};
+
+enum class AudioControlType {
+        PAUSE_CAPTURE,
+        RESUME_CAPTURE,
+        PAUSE_PLAYBACK,
+        RESUME_PLAYBACK
+};
+
+struct AudioControl {
+        Header header;
+        AudioControlType type = AudioControlType::PAUSE_CAPTURE;
+};
+
+struct VideoStream {
+        Header header;
+        uint64_t timestamp_us = 0;
+        uint32_t format = 0;
+        uint32_t width = 0;
+        uint32_t height = 0;
+        uint32_t fps = 0;
+        std::vector<uint8_t> video_data;
+};
+
+enum class VideoControlType { PAUSE_CAPTURE, RESUME_CAPTURE };
+
+struct VideoControl {
+        Header header;
+        VideoControlType type = VideoControlType::PAUSE_CAPTURE;
+};
+
+} // namespace media
+
+} // namespace noetix
 #define sleep_ms(x) std::this_thread::sleep_for(std::chrono::milliseconds(x))
 #define sleep_us(x) std::this_thread::sleep_for(std::chrono::microseconds(x))
 #define get_time_us()                                                          \

@@ -9,7 +9,6 @@
         <Discovery>
             <ParticipantIndex>auto</ParticipantIndex>
             <Peers>
-                <Peer address="127.0.0.1"/>
                 <Peer address="192.168.55.102"/>
             </Peers>
             <SPDPInterval>50</SPDPInterval>
