@@ -2,16 +2,16 @@
 #include "unistd.h"
 using namespace noetix;
 
-#define Key1 1   // 上扳机键
-#define Key2 2   // 下扳机键
-#define Key5 5   // 拇指上左
-#define Key6 6   // 拇指上右
-#define Key7 7   // 拇指下左
-#define Key8 8   // 拇指下右
-#define Key9 9   // 左侧上
-#define Key10 10 // 左侧下
-#define Key11 11 // 右侧上
-#define Key12 12 //  右侧下
+#define Key1 1   // RB
+#define Key2 2   // LB
+#define Key5 5   // X
+#define Key6 6   // Y
+#define Key7 7   // B
+#define Key8 8   // A
+#define Key9 9   // +
+#define Key10 10 // -
+#define Key11 11 // 无
+#define Key12 12 // 左摇杆按下
 
 int main(int argc, char *argv[]) {
         char buf[256];
