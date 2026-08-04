@@ -132,32 +132,6 @@ struct ObsScales {
         scalar_t quat;
         scalar_t heightMeasurements;
 };
-struct JointState {
-        scalar_t leg_l1_joint;
-        scalar_t leg_r1_joint;
-        scalar_t waist_1_joint;
-        scalar_t leg_l2_joint;
-        scalar_t leg_r2_joint;
-        scalar_t arm_l1_joint;
-        scalar_t arm_r1_joint;
-        scalar_t leg_l3_joint;
-        scalar_t leg_r3_joint;
-        scalar_t arm_l2_joint;
-        scalar_t arm_r2_joint;
-        scalar_t leg_l4_joint;
-        scalar_t leg_r4_joint;
-        scalar_t arm_l3_joint;
-        scalar_t arm_r3_joint;
-        scalar_t leg_l5_joint;
-        scalar_t leg_r5_joint;
-        scalar_t arm_l4_joint;
-        scalar_t arm_r4_joint;
-        scalar_t leg_l6_joint;
-        scalar_t leg_r6_joint;
-        scalar_t arm_l5_joint;
-        scalar_t arm_r5_joint;
-        scalar_t waist_2_joint;
-};
 
 struct RLRobotCfg {
         struct ControlCfg {
