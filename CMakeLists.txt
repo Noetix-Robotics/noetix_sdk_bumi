@@ -62,6 +62,7 @@ target_link_libraries(mediacontrol_py
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/thirdlib/include)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm.*|arm|aarch64")
         include_directories(${CMAKE_SOURCE_DIR}/dds/aarch64/include/ddscxx)
         include_directories(${CMAKE_SOURCE_DIR}/dds/aarch64/include/ddsc)
