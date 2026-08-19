@@ -1,0 +1,159 @@
+from typing import List
+
+class MediaHeader:
+    message_id: int
+    timestamp_us: int
+    sn: str
+
+    def __init__(self) -> None: ...
+
+class WorkStatus:
+    READY: WorkStatus
+    SLEEPED: WorkStatus
+    WAKEUPED: WorkStatus
+    EXIT: WorkStatus
+
+class SystemControlType:
+    TO_WAKEUP: SystemControlType
+    TO_SLEEP: SystemControlType
+    TO_RESET: SystemControlType
+
+class StatusChangeReason:
+    SYSTEM_LAUNCH: StatusChangeReason
+    CMD_RESET: StatusChangeReason
+    AUDIO_WAKEUPED: StatusChangeReason
+    CMD_WAKEUPED: StatusChangeReason
+    AUDIO_SLEEPED: StatusChangeReason
+    CMD_SLEEPED: StatusChangeReason
+    TIMEOUT_SLEEPED: StatusChangeReason
+    ERROR_SLEEPED: StatusChangeReason
+
+class SystemStatus:
+    header: MediaHeader
+    value: WorkStatus
+    reason: StatusChangeReason
+
+    def __init__(self) -> None: ...
+
+class SystemError:
+    header: MediaHeader
+    code: int
+    message: str
+
+    def __init__(self) -> None: ...
+
+class AudioStream:
+    header: MediaHeader
+
+    timestamp_us: int
+
+    channels: int
+
+    sample_rate: int
+
+    format: int
+
+    duration_ms: int
+
+    audio_data: List[int]
+
+    def __init__(self) -> None: ...
+
+class VideoStream:
+    header: MediaHeader
+
+    timestamp_us: int
+
+    format: int
+
+    width: int
+
+    height: int
+
+    fps: int
+
+    video_data: List[int]
+
+    def __init__(self) -> None: ...
+
+class MediaController:
+    @staticmethod
+    def instance() -> MediaController: ...
+    def init(self) -> bool: ...
+
+    # System Control
+
+    def set_system_control(self, SystemControlType, bool) -> None: ...
+
+    # System State
+
+    def subscribe_system_status(self, callback) -> None: ...
+    def subscribe_system_error(self, callback) -> None: ...
+
+    # Volume
+
+    def get_volume(self) -> int: ...
+    def set_volume(self, value: int) -> None: ...
+
+    # Common Config
+
+    def get_timeout(self) -> int: ...
+    def set_timeout(self, timeout_ms: int) -> None: ...
+    def get_audio_cue_enable(self) -> bool: ...
+    def set_audio_cue_enable(self, enable: bool) -> None: ...
+    def get_internal_capture_audio_data_to_agent_enable(self) -> bool: ...
+    def set_internal_capture_audio_data_to_agent_enable(self, enable: bool) -> None: ...
+    def get_external_custom_audio_data_to_agent_enable(self) -> bool: ...
+    def set_external_custom_audio_data_to_agent_enable(self, enable: bool) -> None: ...
+    def get_internal_agent_audio_data_to_playback_enable(self) -> bool: ...
+    def set_internal_agent_audio_data_to_playback_enable(
+        self, enable: bool
+    ) -> None: ...
+    def get_external_custom_audio_data_to_playback_enable(self) -> bool: ...
+    def set_external_custom_audio_data_to_playback_enable(
+        self, enable: bool
+    ) -> None: ...
+    def get_internal_capture_video_data_to_agent_enable(self) -> bool: ...
+    def set_internal_capture_video_data_to_agent_enable(self, enable: bool) -> None: ...
+    def get_external_custom_video_data_to_agent_enable(self) -> bool: ...
+    def set_external_custom_video_data_to_agent_enable(self, enable: bool) -> None: ...
+    def get_external_custom_audio_data_to_agent_use_internal_3a(self) -> bool: ...
+    def set_external_custom_audio_data_to_agent_use_internal_3a(
+        self, enable: bool
+    ) -> None: ...
+
+    # Wakeup Config
+
+    def get_wakeup_response_words(self) -> str: ...
+    def set_wakeup_response_words(self, words: str) -> None: ...
+    def get_sleep_response_words(self) -> str: ...
+    def set_sleep_response_words(self, words: str) -> None: ...
+    def get_wakeup_words(self) -> str: ...
+
+    # Audio Stream
+
+    def subscribe_internal_audio_capture(self, callback) -> None: ...
+    def subscribe_internal_audio_playback(self, callback) -> None: ...
+
+    # Video Stream
+
+    def subscribe_internal_video_capture(self, callback) -> None: ...
+    def subscribe_internal_video_desensed(self, callback) -> None: ...
+
+    # Video Control
+
+    def pause_video_capture(self) -> None: ...
+    def resume_video_capture(self) -> None: ...
+
+    # External Stream
+
+    def publish_external_video_stream(self, stream: VideoStream) -> None: ...
+    def publish_external_audio_stream(self, stream: AudioStream) -> None: ...
+    def publish_external_audio_playback_stream(self, stream: AudioStream) -> None: ...
+
+    # Audio Control
+
+    def pause_audio_capture(self) -> None: ...
+    def resume_audio_capture(self) -> None: ...
+    def pause_audio_playback(self) -> None: ...
+    def resume_audio_playback(self) -> None: ...

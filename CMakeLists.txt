@@ -34,35 +34,34 @@ find_package(Eigen3 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(pybind11 REQUIRED)
 
-pybind11_add_module(highcontrol_py src/highcontrol_pybind.cpp)
+pybind11_add_module(highcontrol_py pybind/highcontrol_pybind.cpp)
 
-pybind11_add_module(lowcontrol_py src/lowcontrol_pybind.cpp)
+pybind11_add_module(lowcontrol_py pybind/lowcontrol_pybind.cpp)
 
-pybind11_add_module(mediacontrol_py src/mediacontrol_pybind.cpp)
+pybind11_add_module(mediacontrol_py pybind/mediacontrol_pybind.cpp)
 
 target_link_libraries(highcontrol_py
     PRIVATE
-    driver
+    noetix_sdk
     ${DDS_LIB_DIR}/libddsc.so
     ${DDS_LIB_DIR}/libddscxx.so
 )
 
 target_link_libraries(lowcontrol_py
     PRIVATE
-    driver
+    noetix_sdk
     ${DDS_LIB_DIR}/libddsc.so
     ${DDS_LIB_DIR}/libddscxx.so
 )
 
 target_link_libraries(mediacontrol_py
     PRIVATE
-    driver
+    noetix_sdk
     ${DDS_LIB_DIR}/libddsc.so
     ${DDS_LIB_DIR}/libddscxx.so
 )
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
-include_directories(${CMAKE_SOURCE_DIR}/thirdlib/include)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm.*|arm|aarch64")
         include_directories(${CMAKE_SOURCE_DIR}/dds/aarch64/include/ddscxx)
         include_directories(${CMAKE_SOURCE_DIR}/dds/aarch64/include/ddsc)
@@ -76,10 +75,10 @@ add_compile_definitions(SDK_ROOT="${CMAKE_BINARY_DIR}/..")
 include_directories(${EIGEN3_INCLUDE_DIRS})
 
 
-add_executable(example_high examples_cpp/example_high.cpp)
-add_executable(example_low examples_cpp/example_low.cpp)
-add_executable(example_policy_walk examples_cpp/example_policy_walk.cpp)
-add_executable(example_media examples_cpp/example_media.cpp)
+add_executable(example_high examples/cpp/example_high.cpp)
+add_executable(example_low examples/cpp/example_low.cpp)
+add_executable(example_policy_walk examples/cpp/example_policy_walk.cpp)
+add_executable(example_media examples/cpp/example_media.cpp)
 
 target_include_directories(example_high
         PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
@@ -92,13 +91,13 @@ target_include_directories(example_media
 
 target_link_libraries(example_high
         Threads::Threads 
-        driver
+        noetix_sdk
         ${DDS_LIB_DIR}/libddsc.so
         ${DDS_LIB_DIR}/libddscxx.so
 )
 target_link_libraries(example_low
         Threads::Threads
-        driver
+        noetix_sdk
         ${DDS_LIB_DIR}/libddsc.so
         ${DDS_LIB_DIR}/libddscxx.so
 )
@@ -106,13 +105,13 @@ target_link_libraries(example_policy_walk
         Threads::Threads
         onnxruntime
         yaml-cpp
-        driver
+        noetix_sdk
         ${DDS_LIB_DIR}/libddsc.so
         ${DDS_LIB_DIR}/libddscxx.so
 )
 target_link_libraries(example_media
         Threads::Threads
-        driver
+        noetix_sdk
         ${DDS_LIB_DIR}/libddsc.so
         ${DDS_LIB_DIR}/libddscxx.so
 )

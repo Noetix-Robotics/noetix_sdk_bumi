@@ -1,15 +1,12 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-// #include <Eigen/Core>
-// #include <Eigen/Dense>
 #include <eigen3/Eigen/Dense>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
-#include <queue>
-#include "thread"
+#include <thread>
 namespace noetix {
 #define SDK_VERSION "3.1.0"
 
@@ -213,66 +210,6 @@ struct joydata {
 };
 
 // ==================== MEDIA ====================
-
-template<typename T>
-class StreamBuffer
-{
-public:
-
-    void Push(const T &data)
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-
-        queue_.push(data);
-
-
-        // 保留最近5帧
-        while(queue_.size() > max_size_)
-        {
-            queue_.pop();
-        }
-    }
-
-
-    bool Pop(T &data)
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-
-
-        if(queue_.empty())
-        {
-            return false;
-        }
-
-
-        data = queue_.front();
-
-        queue_.pop();
-
-        return true;
-    }
-
-
-    void Clear()
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-
-        while(!queue_.empty())
-        {
-            queue_.pop();
-        }
-    }
-
-
-private:
-
-    std::queue<T> queue_;
-
-    std::mutex mutex_;
-
-    const size_t max_size_ = 5;
-};
-
 namespace media {
 
 struct Header {
@@ -296,12 +233,6 @@ enum class StatusChangeReason {
 
 enum class SystemControlType { TO_WAKEUP, TO_SLEEP, TO_RESET };
 
-struct SystemControl {
-        Header header;
-        SystemControlType type = SystemControlType::TO_WAKEUP;
-        bool need_audio_response = true;
-};
-
 struct SystemStatus {
         Header header;
         WorkStatus value = WorkStatus::READY;
@@ -314,11 +245,6 @@ struct SystemError {
         std::string message;
 };
 
-struct CommonConfig {
-        Header header;
-        std::string common_config;
-};
-
 struct AudioStream {
         Header header;
         uint64_t timestamp_us = 0;
@@ -329,23 +255,6 @@ struct AudioStream {
         std::vector<int16_t> audio_data;
 };
 
-struct AudioVolume {
-        Header header;
-        int32_t value = 0;
-};
-
-enum class AudioControlType {
-        PAUSE_CAPTURE,
-        RESUME_CAPTURE,
-        PAUSE_PLAYBACK,
-        RESUME_PLAYBACK
-};
-
-struct AudioControl {
-        Header header;
-        AudioControlType type = AudioControlType::PAUSE_CAPTURE;
-};
-
 struct VideoStream {
         Header header;
         uint64_t timestamp_us = 0;
@@ -354,13 +263,6 @@ struct VideoStream {
         uint32_t height = 0;
         uint32_t fps = 0;
         std::vector<uint8_t> video_data;
-};
-
-enum class VideoControlType { PAUSE_CAPTURE, RESUME_CAPTURE };
-
-struct VideoControl {
-        Header header;
-        VideoControlType type = VideoControlType::PAUSE_CAPTURE;
 };
 
 } // namespace media

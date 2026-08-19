@@ -1,6 +1,6 @@
 #!/bin/bash
 if [ "$1" = "clean" ]; then
-    rm -rf build
+    rm -rf build out
     exit 0
 fi
 get_arch=$(uname -m)

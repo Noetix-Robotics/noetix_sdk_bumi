@@ -8,7 +8,7 @@ class MediaDDSWrapper;
 
 class MediaController {
       public:
-	static MediaController *Instance();
+        static MediaController *Instance();
 
         ~MediaController();
 
@@ -17,24 +17,24 @@ class MediaController {
         // System Control
         //=========================================================
 
-        // 唤醒机器人
-        void wakeup();
-
-        // 进入休眠
-        void sleep();
-
-        // 重启语音模块
-        void restart();
+        void set_system_control(media::SystemControlType type,
+                                bool is_need_reply);
 
         //=========================================================
         // System State
         //=========================================================
 
         // 获取当前系统状态
-        media::SystemStatus get_system_status();
+        using SystemstatusCallback =
+            std::function<void(const media::SystemStatus &)>;
+
+        void subscribe_system_status(SystemstatusCallback callback);
 
         // 获取最近一次系统错误
-        media::SystemError get_system_error();
+        using SystemerrorCallback =
+            std::function<void(const media::SystemError &)>;
+
+        void subscribe_system_error(SystemerrorCallback callback);
 
         //=========================================================
         // 音量控制
@@ -128,21 +128,27 @@ class MediaController {
         // Audio Stream
         //=========================================================
 
+        using AudiostreamCallback =
+            std::function<void(const media::AudioStream)>;
+
         // 获取机器人内部麦克风采集到的音频流
-        media::AudioStream get_audio_capture_data();
+        void subscribe_internal_audio_capture(AudiostreamCallback callback);
 
         // 获取机器人内部播放的音频流
-        media::AudioStream get_audio_playback_data();
+        void subscribe_internal_audio_playback(AudiostreamCallback callback);
 
         //=========================================================
         // Video Stream
         //=========================================================
 
+        using VideostreamCallback =
+            std::function<void(const media::VideoStream)>;
+
         // 获取机器人内部摄像头采集的视频流
-        media::VideoStream get_video_capture_data();
+        void subscribe_internal_video_capture(VideostreamCallback callback);
 
         // 获取脱敏后的视频流
-        media::VideoStream get_video_capture_desensed_data();
+        void subscribe_internal_video_desensed(VideostreamCallback callback);
 
         //=========================================================
         // Video Control
@@ -185,7 +191,7 @@ class MediaController {
         void resume_audio_playback();
 
       private:
-	std::unique_ptr<MediaDDSWrapper> ddswrapper;
+        std::unique_ptr<MediaDDSWrapper> ddswrapper;
 };
 
 } // namespace noetix
