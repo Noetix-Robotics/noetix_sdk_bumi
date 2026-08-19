@@ -229,6 +229,8 @@ static void cmd_external_audio_agent(MediaController *ctrl,
                                      const std::string &wav_path) {
 	ctrl->set_external_custom_audio_data_to_agent_enable(true);
 	sleep_ms(100);
+	ctrl->set_internal_capture_audio_data_to_agent_enable(false);
+	sleep_ms(100);
         printf("[CMD] external_audio_agent: %s\n", wav_path.c_str());
 
         std::vector<int16_t> pcm;
@@ -263,8 +265,9 @@ static void cmd_external_audio_agent(MediaController *ctrl,
                 sleep_ms(20);
         }
         printf("[CMD] external_audio_agent done\n");
-	ctrl->set_external_custom_audio_data_to_agent_enable(false);
+	ctrl->set_internal_capture_audio_data_to_agent_enable(true);
 	sleep_ms(100);
+	ctrl->set_external_custom_audio_data_to_agent_enable(false);
 }
 
 // --- 5. external_audio_playback: play wav to internal speaker (2ch) ---
