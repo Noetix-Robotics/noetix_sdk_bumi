@@ -1,5 +1,6 @@
 #include "highcontroller.h"
-#include "unistd.h"
+#include <unistd.h>
+
 using namespace noetix;
 
 #define Key1 1   // RB
@@ -13,6 +14,10 @@ using namespace noetix;
 #define Key11 11 // 无
 #define Key12 12 // 左摇杆按下
 
+// 共享状态，由回调更新，主循环读取
+static joydata remote_data;
+static int curmode = 0;
+
 int main(int argc, char *argv[]) {
         char buf[256];
         bool ret = true;
@@ -24,15 +29,26 @@ int main(int argc, char *argv[]) {
         HighController *ctrl = HighController::Instance();
         ctrl->init();
 
-        joydata remote_data;
+        // 注册硬件状态回调
+        ctrl->subscribe_robot_hardware_status([](const RobotHardwareStatus &status) {
+                static int lastmode = -1;
+                // 更新遥控器数据
+                remote_data = status.remote_data;
+                // 更新模式
+                curmode = status.workmode;
+                if (curmode != lastmode) {
+                        lastmode = curmode;
+                        printf("[DEBUG]: callback: current mode is %d\r\n",
+                               curmode);
+                }
+        });
 
         int key_updown[14], key_inuse[14];
         float x, yaw;
-        int fileindex;
+        int fileindex = 0;
         ControlCmd action;
 
         while (true) {
-                remote_data = ctrl->from_dds_get_joydata();
                 for (int i = 0; i < 14; i++) {
                         if (remote_data.button[i] == 0) {
                                 key_updown[i] = 0;

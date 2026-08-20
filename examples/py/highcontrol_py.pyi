@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum
 import numpy as np
-from typing import List
+from typing import List, Callable
 
 # =====================
 # Enums
@@ -77,6 +77,21 @@ class MotorState:
     error: int
     temperature: float
 
+class RobotHardwareStatus:
+    def __init__(self) -> None: ...
+
+    imu_data: NingImuData
+    remote_data: JoyData
+    motor_data: List[MotorState]
+    bms_data: RobotBmsData
+    workmode: int
+
+# =====================
+# Callback Type
+# =====================
+
+RobotHardwareStatusCallback = Callable[[RobotHardwareStatus], None]
+
 # =====================
 # Core Controller
 # =====================
@@ -88,11 +103,9 @@ class HighController:
     def publish_cmd(
         self, x: float, y: float, z: float, action: ControlCmd, index: int = 0
     ) -> None: ...
-    def get_mode(self) -> int: ...
-    def from_dds_get_joydata(self) -> JoyData: ...
-    def get_imu_data(self) -> NingImuData: ...
-    def get_joint_state(self) -> List[MotorState]: ...
-    def get_robot_bms_data(self) -> RobotBmsData: ...
+    def subscribe_robot_hardware_status(
+        self, callback: RobotHardwareStatusCallback
+    ) -> None: ...
 
 class AoLionDriver:
     def __init__(self) -> None: ...

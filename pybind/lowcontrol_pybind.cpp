@@ -1,8 +1,9 @@
 #include "aolion_driver.h"
+#include "lowcontroller.h"
+#include <pybind11/functional.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include "lowcontroller.h"
 
 namespace py = pybind11;
 using namespace noetix;
@@ -82,6 +83,15 @@ PYBIND11_MODULE(lowcontrol_py, m) {
             .def_readwrite("error", &MotorState::error)
             .def_readwrite("temperature", &MotorState::temperature);
 
+        // RobotHardwareStatus
+        py::class_<RobotHardwareStatus>(m, "RobotHardwareStatus")
+            .def(py::init<>())
+            .def_readonly("imu_data", &RobotHardwareStatus::imu_data)
+            .def_readonly("remote_data", &RobotHardwareStatus::remote_data)
+            .def_readonly("motor_data", &RobotHardwareStatus::motor_data)
+            .def_readonly("bms_data", &RobotHardwareStatus::bms_data)
+            .def_readonly("workmode", &RobotHardwareStatus::workmode);
+
         py::class_<LowController>(m, "LowController")
             .def_static("instance", &LowController::Instance,
                         py::return_value_policy::reference)
@@ -105,20 +115,18 @@ PYBIND11_MODULE(lowcontrol_py, m) {
                 },
                 py::arg("motorcmd"))
 
-            // 获取关节状态
-            .def("get_joint_state", &LowController::get_joint_state)
-
-            // 获取 IMU 数据
-            .def("get_imu_data", &LowController::get_imu_data)
-
-            // 获取摇杆数据
-            .def("from_dds_get_joydata", &LowController::from_dds_get_joydata)
-
             // 根据关节名字获取索引
             .def("getJointsIndex", &LowController::getJointsIndex,
                  py::arg("jointname"))
 
-            .def("get_robot_bms_data", &LowController::get_robot_bms_data);
+            .def("subscribe_robot_hardware_status",
+                 [](LowController &self, py::function callback) {
+                         self.subscribe_robot_hardware_status(
+                             [callback](const RobotHardwareStatus &status) {
+                                     py::gil_scoped_acquire acquire;
+                                     callback(py::cast(status));
+                             });
+                 });
 
         py::class_<AoLionDriver>(m, "AoLionDriver")
             .def(py::init<>())

@@ -70,6 +70,9 @@ std::vector<std::string> joint_names;
 // JoystickFilter filter;
 AoLionDriver aoliondriver;
 
+// 共享硬件状态，由回调更新
+static RobotHardwareStatus latest_hw_status;
+
 vector_t currentJointAngles_;
 float current_vel_limit_ = 1.5;
 
@@ -108,6 +111,12 @@ void init() {
         // "/config/ning_user.yaml");
         mode_ = WorkMode::DEFAULT;
         aoliondriver.init("/dev/input/js0", 115200);
+
+        // 注册硬件状态回调
+        ctrl->subscribe_robot_hardware_status(
+            [](const RobotHardwareStatus &status) {
+                    latest_hw_status = status;
+            });
 
         actuatedDofNum_ = 21;
         standDuration = 1000;
@@ -148,9 +157,7 @@ bool updateStateEstimation() {
         quaternion_t quat;
         vector3_t angularVel, linearAccel;
 
-        std::array<MotorState, 21> joint_state = ctrl->get_joint_state();
-        // const std::shared_ptr<const std::array<MotorState, 21>> ms =
-        // motor_state_buffer_.GetData();
+        const auto &joint_state = latest_hw_status.motor_data;
 
         std::chrono::microseconds now =
             std::chrono::duration_cast<std::chrono::microseconds>(
@@ -165,21 +172,7 @@ bool updateStateEstimation() {
                 }
         }
 
-        NingImuData imudata = ctrl->get_imu_data();
-        // const std::shared_ptr<const NingImuData> idata =
-        // imu_buffer_.GetData(); for (int i = 0; i < 4; i++) { imudata.ori[i] =
-        // (*idata).ori[i];
-        //}
-        // for (int i = 0; i < 3; i++) {
-        // imudata.angular_vel[i] = (*idata).angular_vel[i];
-        // imudata.linear_acc[i] = (*idata).linear_acc[i];
-        //}
-        // for (int i = 0; i < 9; i++) {
-        // imudata.ori_cov[i] = (*idata).ori_cov[i];
-        // imudata.angular_vel_cov[i] =
-        //(*idata).angular_vel_cov[i];
-        // imudata.linear_acc_cov[i] = (*idata).linear_acc_cov[i];
-        //}
+        const auto &imudata = latest_hw_status.imu_data;
 
         for (size_t i = 0; i < 4; ++i) {
                 quat.coeffs()(i) = imudata.ori[i];
@@ -456,19 +449,14 @@ void process() {
                 now.time_since_epoch())
                 .count();
 
-        // const std::shared_ptr<const std::array<MotorState, 21>> ms =
-        // motor_state_buffer_.GetData();
-        // std::array<MotorState, 21> ms = ctrl->get_joint_state();
-        // const std::shared_ptr<const joydata> jdata =
-        //     joy_buffer_.GetData();
-        const joydata l_jdata = aoliondriver.getremotedata();
-
-        const joydata *jdata = &l_jdata;
-        if (jdata) {
-                memcpy(remote_data.button, &(*jdata).button[0],
-                       sizeof(remote_data.button));
-                memcpy(remote_data.axes, &(*jdata).axes[0],
-                       sizeof(remote_data.axes));
+        // remote_data = latest_hw_status.remote_data;
+	const joydata l_jdata = aoliondriver.getremotedata();
+	const joydata *jdata = &l_jdata;
+	if(jdata) {
+		memcpy(remote_data.button, &(*jdata).button[0], sizeof(remote_data.button));
+		memcpy(remote_data.axes, &(*jdata).axes[0], sizeof(remote_data.axes));
+	}
+        {
                 cmd.x = remote_data.axes[1];
                 cmd.y = 0;
                 cmd.yaw = remote_data.axes[0];
@@ -479,8 +467,8 @@ void process() {
                                 standPercent = 0;
                                 mode_ = WorkMode::LIE;
                                 keyflag[9] = 1;
-                                std::array<MotorState, 21> joint_state =
-                                    ctrl->get_joint_state();
+                                const auto &joint_state =
+                                    latest_hw_status.motor_data;
                                 int index = 0;
                                 for (size_t i = 0; i < actuatedDofNum_; i++) {
                                         index =
@@ -505,8 +493,8 @@ void process() {
                                 if (mode_ != WorkMode::STAND) {
                                         standPercent = 0;
                                         mode_ = WorkMode::STAND;
-                                        std::array<MotorState, 21> joint_state =
-                                            ctrl->get_joint_state();
+                                        const auto &joint_state =
+                                            latest_hw_status.motor_data;
                                         int index = 0;
                                         for (size_t i = 0; i < actuatedDofNum_;
                                              i++) {

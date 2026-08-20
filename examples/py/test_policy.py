@@ -191,6 +191,9 @@ joint_names = []
 aoliondriver = AoLionDriver()
 current_vel_limit_ = 1.5
 
+# 共享硬件状态，由回调更新
+latest_hw_status = None
+
 
 def square(a):
     return a * a
@@ -321,6 +324,13 @@ def init():
 
     aoliondriver.init("/dev/input/js0", 115200)
 
+    # 注册硬件状态回调
+    def _on_hw_status(status):
+        global latest_hw_status
+        latest_hw_status = status
+
+    ctrl.subscribe_robot_hardware_status(_on_hw_status)
+
     # DOF
     actuatedDofNum_ = 21
 
@@ -389,7 +399,9 @@ def updateStateEstimation():
     angular_vel = np.zeros(3, dtype=np.float32)
     linear_acc = np.zeros(3, dtype=np.float32)
 
-    joint_state = ctrl.get_joint_state()
+    global latest_hw_status
+
+    joint_state = latest_hw_status.motor_data
 
     for i in range(actuatedDofNum_):
         hw_idx = ctrl.getJointsIndex(jointNames[i])
@@ -398,7 +410,7 @@ def updateStateEstimation():
             joint_pos[i] = joint_state[hw_idx].pos
             joint_vel[i] = joint_state[hw_idx].vel
 
-    imudata = ctrl.get_imu_data()
+    imudata = latest_hw_status.imu_data
 
     quat[:] = np.array(imudata.ori, dtype=np.float32)
 
@@ -770,8 +782,11 @@ def process():
 
     cmd = Command()
 
-    l_jdata = aoliondriver.getremotedata()
+    if latest_hw_status is None:
+        return
 
+    # remote_data = latest_hw_status.remote_data
+    l_jdata = aoliondriver.getremotedata()
     if l_jdata is None:
         return
 
@@ -788,7 +803,7 @@ def process():
             mode_ = "LIE"
             keyflag[9] = 1
 
-            joint_state = ctrl.get_joint_state()
+            joint_state = latest_hw_status.motor_data
 
             for i in range(actuatedDofNum_):
                 index = ctrl.getJointsIndex(jointNames[i])
@@ -811,7 +826,7 @@ def process():
                 standPercent = 0.0
                 mode_ = "STAND"
 
-                joint_state = ctrl.get_joint_state()
+                joint_state = latest_hw_status.motor_data
 
                 for i in range(actuatedDofNum_):
                     index = ctrl.getJointsIndex(jointNames[i])

@@ -204,10 +204,22 @@ struct NingImuData {
         double linear_acc[3];
         double linear_acc_cov[9];
 };
+
 struct joydata {
         double axes[2]; // horz,vert;
         int button[14];
 };
+
+struct RobotHardwareStatus {
+        NingImuData imu_data;
+        joydata remote_data;
+        std::array<MotorState, 21> motor_data;
+        RobotBmsData bms_data;
+        int workmode;
+};
+
+using RobotHardwareStatusCallback =
+    std::function<void(const RobotHardwareStatus &)>;
 
 // ==================== MEDIA ====================
 namespace media {

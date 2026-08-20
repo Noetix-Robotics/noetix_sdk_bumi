@@ -33,16 +33,29 @@ Key9 = 9
 Key10 = 10
 Key12 = 12
 
-lasmode = curmode = 0
+# 共享状态，由回调更新
+remote_data = None
+curmode = -1
 
-while True:
-    curmode = ctrl.get_mode()
-    if curmode != lasmode:
-        lasmode = curmode
+
+def on_robot_hardware_status(status: RobotHardwareStatus):
+    """硬件状态回调：更新遥控器数据和模式"""
+    global remote_data, curmode
+    remote_data = status.remote_data
+    if status.workmode != curmode:
+        curmode = status.workmode
         print(f"[PYTHON DEBUG]: curmode is {curmode}")
 
-    # remote_data = al.getremotedata() # EDU Bumi get joydata funtion
-    remote_data = ctrl.from_dds_get_joydata()  # standard Bumi get joydata funtion
+
+# remote_data = al.getremotedata() # EDU Bumi get joydata funtion
+
+# 注册回调
+ctrl.subscribe_robot_hardware_status(on_robot_hardware_status)
+
+while True:
+    if remote_data is None:
+        sleep(0.01)
+        continue
 
     axes = remote_data.axes
     buttons = remote_data.button

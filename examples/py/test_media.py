@@ -154,6 +154,8 @@ def cmd_external_audio_agent(ctrl, wav_path):
     """Send WAV audio to agent (wakeup first)."""
     ctrl.set_external_custom_audio_data_to_agent_enable(True)
     sleep(0.1)
+    ctrl.set_internal_capture_audio_data_to_agent_enable(False)
+    sleep(0.1)
     print(f"[CMD] external_audio_agent: {wav_path}")
     pcm, channels, sample_rate = read_wav(wav_path)
     print(
@@ -186,6 +188,7 @@ def cmd_external_audio_agent(ctrl, wav_path):
     print("[CMD] external_audio_agent done")
     ctrl.set_external_custom_audio_data_to_agent_enable(False)
     sleep(0.1)
+    ctrl.set_internal_capture_audio_data_to_agent_enable(True)
 
 
 def cmd_external_audio_playback(ctrl, wav_path):

@@ -1,8 +1,7 @@
 # lowcontrol_py.pyi
 
-from typing import Any
+from typing import Any, Callable, List
 import numpy as np
-from typing import List
 
 class RobotBmsData:
     battery_temp: int
@@ -51,16 +50,25 @@ class MotorState:
     error: int
     temperature: float
 
+class RobotHardwareStatus:
+    def __init__(self) -> None: ...
+    imu_data: NingImuData
+    remote_data: JoyData
+    motor_data: List[MotorState]
+    bms_data: RobotBmsData
+    workmode: int
+
+RobotHardwareStatusCallback = Callable[[RobotHardwareStatus], None]
+
 class LowController:
     @staticmethod
     def instance() -> "LowController": ...
     def init(self) -> bool: ...
     def set_joint(self, motorcmd: List[MotorCmd]) -> None: ...
-    def get_joint_state(self) -> Any: ...
-    def get_imu_data(self) -> NingImuData: ...
-    def from_dds_get_joydata(self) -> JoyData: ...
     def getJointsIndex(self, jointname: str) -> int: ...
-    def get_robot_bms_data(self) -> RobotBmsData: ...
+    def subscribe_robot_hardware_status(
+        self, callback: RobotHardwareStatusCallback
+    ) -> None: ...
 
 class AoLionDriver:
     def __init__(self) -> None: ...

@@ -1,8 +1,9 @@
 #include "aolion_driver.h"
+#include "highcontroller.h"
+#include <pybind11/functional.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include "highcontroller.h"
 
 namespace py = pybind11;
 using namespace noetix;
@@ -95,6 +96,15 @@ PYBIND11_MODULE(highcontrol_py, m) {
             .def_readwrite("error", &MotorState::error)
             .def_readwrite("temperature", &MotorState::temperature);
 
+        // RobotHardwareStatus
+        py::class_<RobotHardwareStatus>(m, "RobotHardwareStatus")
+            .def(py::init<>())
+            .def_readonly("imu_data", &RobotHardwareStatus::imu_data)
+            .def_readonly("remote_data", &RobotHardwareStatus::remote_data)
+            .def_readonly("motor_data", &RobotHardwareStatus::motor_data)
+            .def_readonly("bms_data", &RobotHardwareStatus::bms_data)
+            .def_readonly("workmode", &RobotHardwareStatus::workmode);
+
         py::class_<HighController>(m, "HighController")
             .def_static("instance", &HighController::Instance,
                         py::return_value_policy::reference)
@@ -105,12 +115,14 @@ PYBIND11_MODULE(highcontrol_py, m) {
                  py::arg("y"), py::arg("z"), py::arg("action"),
                  py::arg("index") = 0)
 
-            .def("get_mode", &HighController::get_mode)
-
-            .def("from_dds_get_joydata", &HighController::from_dds_get_joydata)
-            .def("get_imu_data", &HighController::get_imu_data)
-            .def("get_joint_state", &HighController::get_joint_state)
-            .def("get_robot_bms_data", &HighController::get_robot_bms_data);
+            .def("subscribe_robot_hardware_status",
+                 [](HighController &self, py::function callback) {
+                         self.subscribe_robot_hardware_status(
+                             [callback](const RobotHardwareStatus &status) {
+                                     py::gil_scoped_acquire acquire;
+                                     callback(py::cast(status));
+                             });
+                 });
 
         py::class_<AoLionDriver>(m, "AoLionDriver")
             .def(py::init<>())
