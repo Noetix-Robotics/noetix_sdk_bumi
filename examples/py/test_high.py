@@ -47,12 +47,11 @@ def on_robot_hardware_status(status: RobotHardwareStatus):
         print(f"[PYTHON DEBUG]: curmode is {curmode}")
 
 
-# remote_data = al.getremotedata() # EDU Bumi get joydata funtion
-
 # 注册回调
 ctrl.subscribe_robot_hardware_status(on_robot_hardware_status)
 
 while True:
+    # remote_data = al.getremotedata() # EDU Bumi get joydata funtion
     if remote_data is None:
         sleep(0.01)
         continue
