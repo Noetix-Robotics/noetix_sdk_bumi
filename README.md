@@ -11,7 +11,7 @@ noetix robot Bumi sdk.
 Before building or running the SDK, ensure the following dependencies are installed:
 
 - CMake (version 3.3 or higher)
-- GCC (version 9.4.0)
+- GCC (version 11.4.0)
 - Make
 
 You can install the required packages on Ubuntu 22.04 with:
