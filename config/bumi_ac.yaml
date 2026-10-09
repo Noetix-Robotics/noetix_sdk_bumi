@@ -477,7 +477,7 @@ run:
     stack_size: 5
   axis_mappings:
     scalez: 1.0
-    scalex: 1.8
+    scalex: 0.5
     scaley: 0.5
 
 # Walk configuration (backup)
