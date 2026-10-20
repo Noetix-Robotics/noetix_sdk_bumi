@@ -77,20 +77,20 @@ include_directories(${EIGEN3_INCLUDE_DIRS})
 
 add_executable(example_high examples/cpp/example_high.cpp)
 add_executable(example_low examples/cpp/example_low.cpp)
-add_executable(example_policy_walk examples/cpp/example_policy_walk.cpp)
+add_executable(example_policy examples/cpp/example_policy.cpp)
 add_executable(example_media examples/cpp/example_media.cpp)
 
 target_include_directories(example_high
         PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_include_directories(example_low
         PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-target_include_directories(example_policy_walk
+target_include_directories(example_policy
         PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_include_directories(example_media
         PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 target_link_libraries(example_high
-        Threads::Threads 
+        Threads::Threads
         noetix_sdk
         ${DDS_LIB_DIR}/libddsc.so
         ${DDS_LIB_DIR}/libddscxx.so
@@ -101,7 +101,7 @@ target_link_libraries(example_low
         ${DDS_LIB_DIR}/libddsc.so
         ${DDS_LIB_DIR}/libddscxx.so
 )
-target_link_libraries(example_policy_walk
+target_link_libraries(example_policy
         Threads::Threads
         onnxruntime
         yaml-cpp
