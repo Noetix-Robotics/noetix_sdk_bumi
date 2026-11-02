@@ -24,8 +24,8 @@
 #include <chrono>
 #include <thread>
 #include <Eigen/Geometry>
-
 // #define DEBUG_OBS
+
 using namespace noetix;
 
 //  全局常量
@@ -39,18 +39,18 @@ namespace
     constexpr int kStandFrames = 1000;
     constexpr auto kStatusTimeout = std::chrono::milliseconds(150);
     constexpr double kWalkToDanceMaxCommand = 0.10;
+    // LB+Y 后继续由 WALK ONNX 控制，先归零速度并等待稳定。
     constexpr auto kDanceSettleWait = std::chrono::milliseconds(1200);
     constexpr auto kDanceStableDuration = std::chrono::milliseconds(500);
     constexpr double kDanceStableJointSpeed = 0.15; // rad/s
     constexpr double kDanceStableGyro = 0.25;       // rad/s
     constexpr double kDanceStableTiltRad = 0.25;    // pitch/roll absolute limit
-
-    // 退出阻尼指令参数
+    // O2: 退出阻尼指令参数
     constexpr int kShutdownDampFrames = 10;
     constexpr auto kShutdownDampInterval = std::chrono::milliseconds(20);
 } // namespace
 
-//  退出信号处理：
+// 退出信号处理
 static std::atomic<bool> g_running{true};
 static void signalHandler(int /*signum*/)
 {                                                      // ctrl + c
@@ -58,9 +58,8 @@ static void signalHandler(int /*signum*/)
 }
 
 //  全局状态
-LowController *ctrl = nullptr; 
+LowController *ctrl = nullptr;
 AoLionDriver aoliondriver;
-
 std::vector<std::string> jointNames{
     "leg_l1_joint", "leg_r1_joint", "waist_1_joint", "leg_l2_joint",
     "leg_r2_joint", "arm_l1_joint", "arm_r1_joint", "leg_l3_joint",
@@ -68,7 +67,6 @@ std::vector<std::string> jointNames{
     "leg_r4_joint", "arm_l3_joint", "arm_r3_joint", "leg_l5_joint",
     "leg_r5_joint", "arm_l4_joint", "arm_r4_joint", "leg_l6_joint",
     "leg_r6_joint"};
-
 std::string modelname;
 int64_t count;
 RobotCfg robotconfig;
@@ -87,7 +85,7 @@ vector_t defaultJointAngles_;
 int actuatedDofNum_ = 0;
 int actionsSize_ = 0;
 int observationSize_ = 0;
-int stackSize_ = 0; 
+int stackSize_ = 0;
 float scalez = 1.0f, scalex = 1.0f, scaley = 1.0f;
 std::vector<tensor_element_t> actions_;
 std::vector<tensor_element_t> policyObservations_;
@@ -124,21 +122,24 @@ std::vector<double> default_joint_pos;
 std::vector<std::string> joint_names;
 
 float current_vel_limit_ = 1.5f;
-std::array<double, kNumJoints> g_lastWalkTarget{}; // WALK 最近一次发送给电机的目标
+// WALK 最近一次发送给电机的目标
+std::array<double, kNumJoints> g_lastWalkTarget{};
 bool g_lastWalkTargetValid = false;
 
 std::array<double, kNumJoints> g_walkResumeFromTarget{};
 bool g_walkResumeBlendActive = false;
 std::chrono::steady_clock::time_point g_walkResumeBlendStart{};
-constexpr double kWalkResumeBlendSeconds = 0.85;
-constexpr double kWalkResumeArmBlendSeconds = 1.50;
+
+constexpr double kWalkResumeBlendSeconds = 0.65;      // 腿部
+constexpr double kWalkResumeArmBlendSeconds = 1.50;   // 手臂
+constexpr double kWalkResumeWaistBlendSeconds = 0.75; // 腰部
 
 static RobotHardwareStatus latest_hw_status{};
 static std::mutex hardware_mutex;
 static std::atomic<bool> hardware_received{false};
 static std::chrono::steady_clock::time_point last_hardware_rx{};
 
-// 请求切舞后，WALK 策略持续输出，直到姿态和关节速度稳定。
+// 请求切舞后，仍由 WALK 策略持续输出，直到姿态和关节速度稳定。
 static bool g_danceStartPending = false;
 static std::chrono::steady_clock::time_point g_danceRequestTime{};
 static std::chrono::steady_clock::time_point g_danceStableSince{};
@@ -208,8 +209,7 @@ std::vector<double> SplitString2Double(const std::string &str, char delimiter)
 void init()
 {
     mode_ = WorkMode::DEFAULT;
-    aoliondriver.init("/dev/input/js0", 115200);
-
+    aoliondriver.init("/dev/input/js1", 115200);
     // 注册硬件状态回调
     ctrl->subscribe_robot_hardware_status(
         [](const RobotHardwareStatus &status)
@@ -358,8 +358,7 @@ void handleStandMode()
         }
         else
         {
-            pos_des = standStartAngles_[j] * (1.0 - standPercent) +
-                      standJointAngles_[j] * standPercent;
+            pos_des = standStartAngles_[j] * (1.0 - standPercent) + standJointAngles_[j] * standPercent;
         }
         int hwIdx = ctrl->getJointsIndex(jointNames[j]);
         if (!std::isfinite(pos_des) || hwIdx < 0 || hwIdx >= kNumJoints)
@@ -415,9 +414,7 @@ void handleLieMode()
     }
 }
 
-// =====================================================================
 //  走路策略
-// =====================================================================
 void computeActions()
 {
     std::vector<Ort::Value> policyInputValues;
@@ -444,15 +441,13 @@ void computeActions()
 
     for (int i = 0; i < actionsSize_; i++)
     {
-        actions_[i] =
-            *(outputValues[0].GetTensorMutableData<tensor_element_t>() + i);
+        actions_[i] = *(outputValues[0].GetTensorMutableData<tensor_element_t>() + i);
     }
 }
 
 void computeObservation()
 {
     vector_t command(3);
-
     double cmd_x = command_[0] * scalex;
     double cmd_y = command_[1] * scaley;
     double cmd_z = command_[2] * scalez;
@@ -493,7 +488,8 @@ void computeObservation()
         }
         for (int i = 0; i < stackSize_; i++)
         {
-            proprioHistoryBuffer_.segment(i * observationSize_, observationSize_) =
+            proprioHistoryBuffer_.segment(i * observationSize_,
+                                          observationSize_) =
                 proprioObs.cast<tensor_element_t>();
         }
         g_isfirstRecObs = false;
@@ -503,13 +499,10 @@ void computeObservation()
     proprioHistoryBuffer_.head(proprioHistoryBuffer_.size() - observationSize_) =
         proprioHistoryBuffer_.tail(proprioHistoryBuffer_.size() - observationSize_)
             .eval();
-    proprioHistoryBuffer_.tail(observationSize_) =
-        proprioObs.cast<tensor_element_t>();
-
+    proprioHistoryBuffer_.tail(observationSize_) = proprioObs.cast<tensor_element_t>();
     for (size_t i = 0; i < (size_t)(observationSize_ * stackSize_); i++)
     {
-        policyObservations_[i] =
-            static_cast<tensor_element_t>(proprioHistoryBuffer_[i]);
+        policyObservations_[i] = static_cast<tensor_element_t>(proprioHistoryBuffer_[i]);
     }
 
     scalar_t obsMin = -robotconfig.clipObs;
@@ -526,16 +519,12 @@ bool handleUserMode()
 {
     if (!updateStateEstimation())
         return false;
-
     if (propri_.projectedGravity(2) >= kFallGravityZ)
     {
-#ifdef DEBUG_OBS
         printf("[WALK] Fall Protection Triggered\n");
-#endif
         mode_ = WorkMode::DEFAULT;
         return true;
     }
-
     if (count % robotconfig.controlCfg.decimation == 0)
     {
         count = 0;
@@ -549,31 +538,72 @@ bool handleUserMode()
                            return std::max(actionMin, std::min(actionMax, x));
                        });
     }
-
     std::array<MotorCmd, kNumJoints> motorcmd{};
     for (int i = 0; i < actionsSize_; i++)
     {
         if (i >= (int)jointNames.size())
             break;
         int hwIdx = ctrl->getJointsIndex(jointNames[i]);
-        scalar_t pos_des =
-            actions_[i] * action_scale[i] + defaultJointAngles_(i);
+        scalar_t pos_des = actions_[i] * action_scale[i] + defaultJointAngles_(i);
 
-        // Smooth DANCE -> WALK handoff
+        // if (g_walkResumeBlendActive)
+        // {
+        //     const double duration =
+        //         (i == 5 || i == 6 || i == 9 || i == 10 ||
+        //          i == 13 || i == 14 || i == 17 || i == 18)
+        //             ? kWalkResumeArmBlendSeconds
+        //             : kWalkResumeBlendSeconds;
+        //     const double elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - g_walkResumeBlendStart).count();
+        //     const double u = std::clamp(elapsed / duration, 0.0, 1.0);
+        //     const double smooth = u * u * (3.0 - 2.0 * u); // smoothstep
+        //     pos_des = (1.0 - smooth) * g_walkResumeFromTarget[i] + smooth * pos_des;
+        // }
         if (g_walkResumeBlendActive)
         {
-            const double duration =
-                (i == 5 || i == 6 || i == 9 || i == 10 ||
-                 i == 13 || i == 14 || i == 17 || i == 18)
-                    ? kWalkResumeArmBlendSeconds
-                    : kWalkResumeBlendSeconds;
+            const bool isWaistJoint = (i == 2); // 腰部关节
+            const bool isArmJoint =
+                (i == 5 || i == 6 ||
+                 i == 9 || i == 10 ||
+                 i == 13 || i == 14 ||
+                 i == 17 || i == 18); // 手臂关节
+
+            // 不同关节使用原来的过渡时间
+            const double duration = isWaistJoint
+                                        ? kWalkResumeWaistBlendSeconds
+                                        : (isArmJoint ? kWalkResumeArmBlendSeconds : kWalkResumeBlendSeconds);
+
             const double elapsed = std::chrono::duration<double>(
-                                       std::chrono::steady_clock::now() - g_walkResumeBlendStart)
+                                       std::chrono::steady_clock::now() -
+                                       g_walkResumeBlendStart)
                                        .count();
             const double u = std::clamp(elapsed / duration, 0.0, 1.0);
-            const double smooth = u * u * (3.0 - 2.0 * u); // smoothstep
-            pos_des = (1.0 - smooth) * g_walkResumeFromTarget[i] +
-                      smooth * pos_des;
+            auto smoothstep = [](double x) // Smoothstep
+            {
+                return x * x * (3.0 - 2.0 * x);
+            };
+            if (isWaistJoint || isArmJoint)
+            {
+                // 上半身分两个阶段恢复：
+                // 第一阶段：DANCE 最后一帧 -> WALK 默认姿态
+                // 第二阶段：WALK 默认姿态 -> WALK ONNX 实时目标
+                if (u < 0.5)
+                {
+                    const double alpha = smoothstep(u * 2.0);
+                    pos_des = (1.0 - alpha) * g_walkResumeFromTarget[i] +
+                              alpha * defaultJointAngles_(i);
+                }
+                else
+                {
+                    const double alpha = smoothstep((u - 0.5) * 2.0);
+                    pos_des = (1.0 - alpha) * defaultJointAngles_(i) + alpha * pos_des;
+                }
+            }
+            else
+            {
+                // 腿部保持原来的 21 关节插值方式
+                const double alpha = smoothstep(u);
+                pos_des = (1.0 - alpha) * g_walkResumeFromTarget[i] + alpha * pos_des;
+            }
         }
 
         if (hwIdx >= 0 && hwIdx < kNumJoints)
@@ -588,17 +618,20 @@ bool handleUserMode()
         lastActions_(i) = actions_[i];
     }
 
+#ifdef DEBUG_OBS
     // 保存最近一次 WALK 电机目标，用于分析 WALK -> DANCE 切换
     static int walkLogCounter = 0;
-
     if (++walkLogCounter % 250 == 0)
     {
+        std::cout << "\n========== WALK MOTOR CMD ==========\n";
+
         for (int i = 0; i < kNumJoints; ++i)
         {
             int hw = ctrl->getJointsIndex(jointNames[i]);
+
             if (hw < 0 || hw >= kNumJoints)
                 continue;
-#ifdef DEBUG_OBS
+
             std::cout << "joint[" << i << "] "
                       << jointNames[i]
                       << " target=" << motorcmd[hw].pos
@@ -606,9 +639,11 @@ bool handleUserMode()
                       << " delta="
                       << motorcmd[hw].pos - propri_.jointPos[i]
                       << std::endl;
-#endif
         }
+
+        std::cout << "====================================\n";
     }
+#endif
 
     bool valid = true;
     for (int i = 0; i < kNumJoints; ++i)
@@ -619,21 +654,16 @@ bool handleUserMode()
             valid = false;
             break;
         }
-
         g_lastWalkTarget[i] = motorcmd[hw].pos;
     }
-
     g_lastWalkTargetValid = valid;
     ctrl->set_joint(motorcmd);
     if (g_walkResumeBlendActive &&
-        std::chrono::duration<double>(
-            std::chrono::steady_clock::now() - g_walkResumeBlendStart)
-                .count() >= kWalkResumeArmBlendSeconds)
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - g_walkResumeBlendStart).count() >= kWalkResumeArmBlendSeconds)
     {
         g_walkResumeBlendActive = false;
         std::cout << "[DANCE] smooth DANCE -> WALK target blend complete\n";
     }
-
     count++;
     return true;
 }
@@ -643,7 +673,6 @@ bool handleUserMode()
 // =====================================================================
 namespace dance
 {
-
     constexpr int N = 21;
     constexpr int STEP = 114;
     constexpr int HISTORY = 5;
@@ -658,13 +687,11 @@ namespace dance
                                                          "r_knee_pitch_joint", "l_arm_yaw_joint", "r_arm_yaw_joint",
                                                          "l_ankle_pitch_joint", "r_ankle_pitch_joint", "l_elbow_pitch_joint",
                                                          "r_elbow_pitch_joint", "l_ankle_roll_joint", "r_ankle_roll_joint"}};
-
     struct Frame
     {
         std::array<double, N> pos{}, vel{};
         Eigen::Quaterniond quat = Eigen::Quaterniond::Identity();
     };
-
     std::vector<Frame> frames;
     std::unique_ptr<Ort::Session> session;
     std::vector<Ort::AllocatedStringPtr> inputOwners, outputOwners;
@@ -701,7 +728,6 @@ namespace dance
                            Eigen::AngleAxisd(propri_.jointPos[2], Eigen::Vector3d::UnitZ())))
             .normalized();
     }
-
     bool validateJointMapping()
     {
         if (jointNames.size() != (size_t)N)
@@ -724,7 +750,6 @@ namespace dance
         }
         return true;
     }
-
     bool loadConfig(const std::string &yamlPath)
     {
         try
@@ -733,7 +758,6 @@ namespace dance
             const auto node = root["dance"];
             if (!node)
                 throw std::runtime_error("missing dance YAML section");
-
             const auto names = node["joint_names"].as<std::vector<std::string>>();
             if (names.size() != (size_t)N)
                 throw std::runtime_error("dance joint_names must have 21 entries");
@@ -744,7 +768,6 @@ namespace dance
                         "dance joint order mismatch at index " + std::to_string(i) +
                         " (got " + names[i] + ", want " + expectedDanceNames[i] + ")");
             }
-
             auto copy21 = [&](const char *key, std::array<double, N> &dest)
             {
                 auto v = node[key].as<std::vector<double>>();
@@ -753,7 +776,8 @@ namespace dance
                 for (int i = 0; i < N; ++i)
                 {
                     if (!std::isfinite(v[i]))
-                        throw std::runtime_error(std::string(key) + " contains nonfinite value");
+                        throw std::runtime_error(std::string(key) +
+                                                 " contains nonfinite value");
                     dest[i] = v[i];
                 }
             };
@@ -775,7 +799,6 @@ namespace dance
 
             if (!validateJointMapping())
                 return false;
-
             if (!default_joint_pos.empty())
             {
                 double max_diff = 0.0;
@@ -799,6 +822,7 @@ namespace dance
                               << ", walk=" << default_joint_pos[max_idx] << ")\n";
                 }
             }
+            std::cout << "[DANCE] loaded configuration from " << yamlPath << "\n";
             return true;
         }
         catch (const std::exception &e)
@@ -807,7 +831,6 @@ namespace dance
             return false;
         }
     }
-
     bool load(const std::string &model, const std::string &jsonPath)
     {
         try
@@ -822,10 +845,9 @@ namespace dance
             const auto &p = j.at("joint_pos");
             const auto &v = j.at("joint_vel");
             const auto &q = j.at("body_quat_w");
-
-            if (!p.is_array() || p.empty() || p.size() != v.size() || p.size() != q.size())
+            if (!p.is_array() || p.empty() || p.size() != v.size() ||
+                p.size() != q.size())
                 throw std::runtime_error("motion array sizes mismatch");
-
             frames.clear();
             std::cerr << "[DANCE DEBUG] Frame count: " << p.size() << std::endl;
             frames.reserve(p.size());
@@ -852,38 +874,48 @@ namespace dance
                 frames.push_back(fr);
             }
 
+            // DANCE ONNX 加载调试
+            std::cerr << "[DANCE DEBUG] Motion frames parsed successfully" << std::endl;
+            std::cerr << "[DANCE DEBUG] ONNX model path: " << model << std::endl;
             // 创建 ONNX Session 配置
             Ort::SessionOptions opt;
             opt.SetInterOpNumThreads(1);
-            session = std::make_unique<Ort::Session>(*onnxEnvPrt_, model.c_str(), opt); // 创建舞蹈 ONNX Session
-
+            // 创建 Session 前
+            std::cerr << "[DANCE DEBUG] Before ONNX Session" << std::endl;
+            // 创建舞蹈 ONNX Session
+            session = std::make_unique<Ort::Session>(*onnxEnvPrt_, model.c_str(), opt);
+            // 创建 Session 后
+            std::cerr << "[DANCE DEBUG] After ONNX Session" << std::endl;
             // 检查模型输入输出数量
+            // ===== 1. 检查 ONNX 输入输出数量 =====
+            std::cerr << "[DANCE DEBUG] Before GetInputCount" << std::endl;
             auto inputCount = session->GetInputCount();
             auto outputCount = session->GetOutputCount();
-            std::cerr << "[DANCE DEBUG] InputCount=" << inputCount
-                      << " OutputCount=" << outputCount << std::endl;
-
+            std::cerr << "[DANCE DEBUG] InputCount=" << inputCount << " OutputCount=" << outputCount << std::endl;
             if (inputCount != 1 || outputCount != 1)
             {
                 throw std::runtime_error("expected one input/output");
             }
 
-            //  检查输入类型
+            // ===== 2. 检查输入类型 =====
+            std::cerr << "[DANCE DEBUG] Before GetInputTypeInfo" << std::endl;
             // 保留 TypeInfo 对象，防止临时对象提前析构
             auto inputTypeInfo = session->GetInputTypeInfo(0);
             auto outputTypeInfo = session->GetOutputTypeInfo(0);
-
             auto in = inputTypeInfo.GetTensorTypeAndShapeInfo();
             auto out = outputTypeInfo.GetTensorTypeAndShapeInfo();
             std::cerr << "[DANCE DEBUG] OutputTypeInfo OK" << std::endl;
 
-            // 检查输入维度
+            // ===== 4. 检查输入维度 =====
+            std::cerr << "[DANCE DEBUG] Before Input GetShape" << std::endl;
             auto a = in.GetShape();
+            std::cerr << "[DANCE DEBUG] Input shape:";
             for (auto x : a)
                 std::cerr << " " << x;
             std::cerr << std::endl;
 
-            // 检查输出维度
+            // ===== 5. 检查输出维度 =====
+            std::cerr << "[DANCE DEBUG] Before Output GetShape" << std::endl;
             auto b = out.GetShape();
             std::cerr << "[DANCE DEBUG] Output shape:";
             for (auto x : b)
@@ -894,26 +926,25 @@ namespace dance
                 a.size() != 2 || (a[0] != 1 && a[0] != -1) || a[1] != OBS ||
                 b.size() != 2 || (b[0] != 1 && b[0] != -1) || b[1] != N)
                 throw std::runtime_error("expected float32 [1,570] -> [1,21]");
-
             Ort::AllocatorWithDefaultOptions allocator;
             inputOwners.clear();
             outputOwners.clear();
 
-            // 获取输入名称
+            // ===== 6. 获取输入名称 =====
+            std::cerr << "[DANCE DEBUG] Before GetInputNameAllocated" << std::endl;
             inputOwners.push_back(session->GetInputNameAllocated(0, allocator));
-            //  获取输出名称
+            std::cerr << "[DANCE DEBUG] Input name allocated" << std::endl;
+
+            // ===== 7. 获取输出名称 =====
+            std::cerr << "[DANCE DEBUG] Before GetOutputNameAllocated" << std::endl;
             outputOwners.push_back(session->GetOutputNameAllocated(0, allocator));
             std::cerr << "[DANCE DEBUG] Output name allocated" << std::endl;
 
             inputName = inputOwners[0].get();
             outputName = outputOwners[0].get();
 
-            std::cerr << "[DANCE DEBUG] InputName=" << inputName
-                      << " OutputName=" << outputName
-                      << std::endl;
-            std::cout << "[DANCE] loaded " << frames.size()
-                      << " frames, model " << model << "\n";
-
+            std::cerr << "[DANCE DEBUG] InputName=" << inputName << " OutputName=" << outputName << std::endl;
+            std::cout << "[DANCE] loaded " << frames.size() << " frames, model " << model << "\n";
             ready = true;
             return true;
         }
@@ -932,25 +963,21 @@ namespace dance
         std::cout << "[DANCE] stop requested: " << reason << "\n";
         if (phase == Phase::IDLE && !active)
             return;
-
-        // 正常结束：不发送阻尼停机指令，也不执行 EXITING 插值。
+        // 正常结束/手动停止：不发送阻尼停机指令，也不执行 EXITING 插值。
         // 只在硬件反馈仍然新鲜且状态估计有效时，直接把控制权交回 WALK ONNX。
         const bool stateOk = hardwareFresh() && updateStateEstimation();
-
         if (stateOk && targetReady && startcontrol)
         {
             for (int i = 0; i < N; ++i)
                 g_walkResumeFromTarget[i] = lastTarget[i];
             g_walkResumeBlendStart = std::chrono::steady_clock::now();
             g_walkResumeBlendActive = true;
-            std::cout << "[DANCE] enabling live WALK-target blend; arms blend over "
-                      << kWalkResumeArmBlendSeconds << " s\n";
+            std::cout << "[DANCE] enabling live WALK-target blend; arms blend over " << kWalkResumeArmBlendSeconds << " s\n";
         }
         else
         {
             g_walkResumeBlendActive = false;
         }
-
         active = false;
         phase = Phase::IDLE;
         targetReady = false;
@@ -976,7 +1003,7 @@ namespace dance
         }
         else
         {
-            // 反馈失效时不运行 WALK 推理，避免使用过期状态生成动作。 此分支不主动发送阻尼指令。
+            // 反馈失效时不运行 WALK 推理，避免使用过期状态生成动作。此分支不主动发送阻尼指令。
             mode_ = WorkMode::DEFAULT;
             std::cerr << "[DANCE] WALK resume unavailable: hardware state stale/invalid; no damping command sent\n";
         }
@@ -1032,7 +1059,7 @@ namespace dance
 
         double maxDelta = 0.0;
         int maxDeltaJoint = -1;
-        std::cout << "\n= DIRECT WALK -> DANCE CHECK =\n";
+        std::cout << "\n========== DIRECT WALK -> DANCE CHECK ==========\n";
         for (int i = 0; i < N; ++i)
         {
             const double delta = frames[0].pos[i] - propri_.jointPos[i];
@@ -1041,16 +1068,16 @@ namespace dance
                 maxDelta = std::abs(delta);
                 maxDeltaJoint = i;
             }
-#ifdef DEBUG_OBS
             std::cout << "joint[" << i << "] " << jointNames[i]
                       << " measured=" << propri_.jointPos[i]
                       << " dance_frame0=" << frames[0].pos[i]
                       << " delta=" << delta << "\n";
-#endif
         }
-       // std::cout << "[DANCE] max frame0 pose difference=" << maxDelta << " rad at joint=" << maxDeltaJoint << "\n";
+        std::cout << "[DANCE] max frame0 pose difference=" << maxDelta
+                  << " rad at joint=" << maxDeltaJoint << "\n";
+        std::cout << "================================================\n";
 
-        // 清空 DANCE 历史并直接进入 PLAYING；首个电机目标仍从实测姿态开始，每控制周期受 kDanceTargetStep 限幅。
+        // 清空 DANCE 历史并直接进入 PLAYING；首个电机目标仍从实测姿态开始，
         obs.fill(0.0f);
         actions.fill(0.0f);
         lastTarget.fill(0.0);
@@ -1062,6 +1089,7 @@ namespace dance
         active = true;
         g_danceStartPending = false;
         g_danceStableTimerStarted = false;
+        std::cout << "[DANCE] direct policy takeover: WALK output stops, DANCE ONNX starts\n";
         return true;
     }
 
@@ -1110,10 +1138,8 @@ namespace dance
                 throw std::runtime_error("nonfinite observation");
 
         std::array<int64_t, 2> shape{{1, OBS}};
-        auto input = Ort::Value::CreateTensor<float>(
-            memoryInfo, obs.data(), OBS, shape.data(), 2);
-        auto output = session->Run(Ort::RunOptions{nullptr},
-                                   &inputName, &input, 1, &outputName, 1);
+        auto input = Ort::Value::CreateTensor<float>(memoryInfo, obs.data(), OBS, shape.data(), 2);
+        auto output = session->Run(Ort::RunOptions{nullptr}, &inputName, &input, 1, &outputName, 1);
 
         if (output.size() != 1 || !output[0].IsTensor() ||
             output[0].GetTensorTypeAndShapeInfo().GetElementCount() != (size_t)N)
@@ -1147,25 +1173,49 @@ namespace dance
                           << std::endl;
                 throw std::runtime_error("tilt");
             }
-
             if (phase != Phase::PLAYING)
                 return;
             if (ticks % DECIMATION == 0)
                 infer();
             if (phase != Phase::PLAYING)
                 return;
+            // std::array<MotorCmd, N> cmd{};
+            // for (int i = 0; i < N; ++i)
+            // {
+            //     int hw = ctrl->getJointsIndex(jointNames[i]);
+            //     if (hw < 0 || hw >= N)
+            //         throw std::runtime_error("motor mapping");
+            //     double target = defaults[i] + double(actions[i]) * scale[i];
+            //     if (!targetReady)
+            //         lastTarget[i] = propri_.jointPos[i];
+            //     target = std::max(lastTarget[i] - kDanceTargetStep,
+            //                       std::min(lastTarget[i] + kDanceTargetStep, target));
+            //     lastTarget[i] = target;
+            //     cmd[hw].pos = target;
+            //     cmd[hw].vel = 0;
+            //     cmd[hw].tau = 0;
+            //     cmd[hw].kp = kp[i];
+            //     cmd[hw].kd = kd[i];
+            //     cmd[hw].motor_id = hw;
+            // }
+            // targetReady = true;
+            // ctrl->set_joint(cmd);
+
             std::array<MotorCmd, N> cmd{};
             for (int i = 0; i < N; ++i)
             {
                 int hw = ctrl->getJointsIndex(jointNames[i]);
                 if (hw < 0 || hw >= N)
                     throw std::runtime_error("motor mapping");
+                // 1. 直接根据 ONNX 输出计算最终关节目标
                 double target = defaults[i] + double(actions[i]) * scale[i];
-                if (!targetReady)
-                    lastTarget[i] = propri_.jointPos[i];
-                target = std::max(lastTarget[i] - kDanceTargetStep,
-                                  std::min(lastTarget[i] + kDanceTargetStep, target));
+                // 2. 检查目标合法性
+                if (!std::isfinite(target))
+                    throw std::runtime_error("nonfinite motor target");
+                // 3. 不再使用 kDanceTargetStep 限制目标变化
+                // 直接记录实际下发的目标，供 DANCE -> WALK 交接使用
                 lastTarget[i] = target;
+                // 4. 填充电机指令
                 cmd[hw].pos = target;
                 cmd[hw].vel = 0;
                 cmd[hw].tau = 0;
@@ -1173,7 +1223,9 @@ namespace dance
                 cmd[hw].kd = kd[i];
                 cmd[hw].motor_id = hw;
             }
+            // 5. 标记目标有效
             targetReady = true;
+            // 6. 一次性下发21个关节目标
             ctrl->set_joint(cmd);
             ++ticks;
         }
@@ -1189,7 +1241,6 @@ namespace dance
             std::cerr << "[DANCE] fault: control handed to DEFAULT; no transition interpolation\n";
         }
     }
-
 } // namespace dance
 
 //  主处理
@@ -1208,18 +1259,15 @@ void process()
         }
         return;
     }
-
     Command cmd;
     const joydata l_jdata = aoliondriver.getremotedata();
     {
         memcpy(remote_data.button, &l_jdata.button[0], sizeof(remote_data.button));
         memcpy(remote_data.axes, &l_jdata.axes[0], sizeof(remote_data.axes));
     }
-
     cmd.x = remote_data.axes[1];
     cmd.y = 0;
     cmd.yaw = remote_data.axes[0];
-
     if (remote_data.button[9] == 1 && keyflag[9] == 0)
     {
         if (!startcontrol)
@@ -1292,8 +1340,7 @@ void process()
         keyflag[10] = 0;
     }
 
-    if (remote_data.button[5] == 1 && remote_data.button[2] == 1 &&
-        keyflag[5] == 0)
+    if (remote_data.button[5] == 1 && remote_data.button[2] == 1 && keyflag[5] == 0)
     {
         if (mode_ == WorkMode::STAND && !dance::active)
         {
@@ -1354,9 +1401,9 @@ void process()
         }
         else if (mode_ == WorkMode::USERMODE && startcontrol)
         {
-            if (!dance::ready)
+            if (!dance::ready || !dance::hardwareEnabled)
             {
-                std::cerr << "[DANCE] request rejected: dance model/config not ready\n";
+                std::cerr << "[DANCE] request rejected: model/config not ready or DANCE_ENABLE_REAL!=1\n";
             }
             else
             {
@@ -1464,6 +1511,7 @@ void process()
             std::cout << "WALK policy execution stops only after settle checks pass\n";
             std::cout << "No ENTERING / EXITING position interpolation\n";
             std::cout << "DANCE ONNX now owns motor commands\n";
+            std::cout << "==========================================\n";
             firstDanceTick = false;
         }
         dance::tick();
@@ -1503,8 +1551,7 @@ void onnxdatainit()
     {
         auto p = policySessionPtr->GetInputNameAllocated(i, allocator);
         policyInputNodeNameAllocatedStrings.push_back(std::move(p));
-        policyInputNames_.push_back(
-            policyInputNodeNameAllocatedStrings.back().get());
+        policyInputNames_.push_back(policyInputNodeNameAllocatedStrings.back().get());
         auto shape = policySessionPtr->GetInputTypeInfo(i)
                          .GetTensorTypeAndShapeInfo()
                          .GetShape();
@@ -1518,8 +1565,7 @@ void onnxdatainit()
     {
         auto p = policySessionPtr->GetOutputNameAllocated(i, allocator);
         policyOutputNodeNameAllocatedStrings.push_back(std::move(p));
-        policyOutputNames_.push_back(
-            policyOutputNodeNameAllocatedStrings.back().get());
+        policyOutputNames_.push_back(policyOutputNodeNameAllocatedStrings.back().get());
         auto shape = policySessionPtr->GetOutputTypeInfo(i)
                          .GetTensorTypeAndShapeInfo()
                          .GetShape();
@@ -1540,39 +1586,30 @@ bool getmodelparam()
         std::string conpath = std::string(buf);
         RobotCfg::ControlCfg &controlCfg = robotconfig.controlCfg;
         YAML::Node acconfig = YAML::LoadFile(conpath + "/config/bumi_ac.yaml");
-
         standDuration = kStandFrames;
         standPercent = 0.0;
-
         controlCfg.decimation = acconfig[modelname]["control"]["decimation"].as<int>();
         controlCfg.cycle_time = acconfig[modelname]["control"]["cycle_time"].as<float>();
-
         robotconfig.clipObs = acconfig[modelname]["normalization"]
                                       ["clip_scales"]["clip_observations"]
                                           .as<double>();
         robotconfig.clipActions = acconfig[modelname]["normalization"]
                                           ["clip_scales"]["clip_actions"]
                                               .as<double>();
-
         actionsSize_ = acconfig[modelname]["size"]["actions_size"].as<int>();
         observationSize_ = acconfig[modelname]["size"]["observations_size"].as<int>();
         stackSize_ = acconfig[modelname]["size"]["stack_size"].as<int>();
-
         scalez = acconfig[modelname]["axis_mappings"]["scalez"].as<float>();
         scaley = acconfig[modelname]["axis_mappings"]["scaley"].as<float>();
         scalex = acconfig[modelname]["axis_mappings"]["scalex"].as<float>();
-
         actions_.resize(actionsSize_);
         actuatedDofNum_ = kNumJoints;
         policyObservations_.resize(observationSize_ * stackSize_);
         std::fill(policyObservations_.begin(), policyObservations_.end(), 0.0f);
-
         lastActions_.resize(actionsSize_);
         lastActions_.setZero();
-
         proprioHistoryBuffer_.resize(stackSize_ * observationSize_);
         proprioHistoryBuffer_.setZero();
-
         defaultJointAngles_.resize(actionsSize_);
         for (int i = 0; i < actionsSize_ && i < (int)default_joint_pos.size(); i++)
             defaultJointAngles_(i) = default_joint_pos[i];
@@ -1676,22 +1713,18 @@ bool loadModel(std::string modelpath)
     }
 }
 
-//  main
 int main()
 {
     try
     {
-        // 注册信号处理器（仅设置原子标志）
-        std::signal(SIGINT, signalHandler);
+        std::signal(SIGINT, signalHandler); // 注册信号处理器（仅设置原子标志）
         std::signal(SIGTERM, signalHandler);
-
         char buf[256];
         getcwd(buf, sizeof(buf));
         std::string path = std::string(buf);
         std::string ddsxml = "file://" + path + "/config/dds.xml";
         setenv("CYCLONEDDS_URI", ddsxml.c_str(), 1);
         printf("cur path is %s\n", path.c_str());
-
         ctrl = LowController::Instance();
         ctrl->init();
         init();
@@ -1707,11 +1740,13 @@ int main()
         {
             std::cerr << "[DANCE] dance unavailable; walking remains available\n";
         }
-        dance::hardwareEnabled = dance::ready;
-        if (dance::hardwareEnabled)
-            std::cout << "[DANCE] real actuation enabled by program configuration\n";
-        else
-            std::cerr << "[DANCE] unavailable: configuration/model load failed\n";
+
+        // const char *enableDance = std::getenv("DANCE_ENABLE_REAL");
+        // dance::hardwareEnabled = enableDance && std::string(enableDance) == "1";
+        // if (!dance::hardwareEnabled)
+        //     std::cerr << "[DANCE] real actuation disabled; set "
+        //                  "DANCE_ENABLE_REAL=1 only after validation\n";
+        dance::hardwareEnabled = true;
 
         while (g_running.load(std::memory_order_acquire))
         {
@@ -1725,7 +1760,8 @@ int main()
                 std::cerr << "[process] exception: " << e.what() << "\n";
             }
             auto end_time = std::chrono::steady_clock::now();
-            auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time)
+            auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+                               end_time - start_time)
                                .count();
             if (elapsed < kLoopPeriodUs)
                 std::this_thread::sleep_for(std::chrono::microseconds(kLoopPeriodUs - elapsed));
@@ -1733,7 +1769,7 @@ int main()
                 std::this_thread::yield();
         }
 
-        // 循环下发阻尼指令，确保电机可靠进入软停
+        // O2: 循环下发阻尼指令，确保电机可靠进入软停
         std::cout << "[main] Shutdown requested. Damping motors...\n";
         mode_ = WorkMode::DEFAULT;
         for (int i = 0; i < kShutdownDampFrames; ++i)
