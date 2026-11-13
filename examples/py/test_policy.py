@@ -1112,7 +1112,7 @@ def main():
     os.environ["CYCLONEDDS_URI"] = ddsxml
     print(f"cur path is {ddsxml}")
 
-    load_model(path + "/policy/policy.onnx")
+    load_model(path + "/policy/policy_walk_python.onnx")
 
     init()
 
