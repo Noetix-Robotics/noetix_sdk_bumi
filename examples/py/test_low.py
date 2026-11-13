@@ -1,5 +1,6 @@
 import sys
 import os
+from time import sleep
 
 os.environ["CYCLONEDDS_URI"] = "file://config/dds.xml"
 
@@ -25,5 +26,7 @@ cmds[0].kd = 5
 
 try:
     ctrl.set_joint(cmds)
+    while True:
+        sleep(0.05)
 except KeyboardInterrupt:
     print("stop")
